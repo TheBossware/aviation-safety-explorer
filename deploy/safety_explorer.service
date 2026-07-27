@@ -1,0 +1,16 @@
+[Unit]
+After=network-online.target
+Wants=network-online.target
+RequiresMountsFor=/home/ubuntu
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/safety_explorer
+Environment=NODE_ENV=production
+Environment=PORT=3200
+ExecStart=/usr/bin/npm run start -- -p 3200
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
