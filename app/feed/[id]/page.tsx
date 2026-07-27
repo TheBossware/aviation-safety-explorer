@@ -2,9 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ChevronRight, ArrowLeft, Building2, Calendar, FolderOpen, MapPin,
-  Bookmark, Share2, Printer,
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import DetailActions from "@/components/DetailActions";
 import { items, severityStyles, typeStyles } from "@/lib/data";
 
 function formatDate(d: string) {
@@ -74,17 +74,7 @@ export default async function DetailPage({ params }: { params: Promise<{ id: str
             ))}
           </div>
 
-          <div className="mt-6 flex items-center gap-2 border-b border-gray-100 pb-5">
-            <button className="flex items-center gap-1.5 rounded-lg bg-blue-800 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-blue-900">
-              <Bookmark className="h-4 w-4" /> Save
-            </button>
-            <button className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-gray-50">
-              <Share2 className="h-4 w-4" /> Share
-            </button>
-            <button className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-gray-50">
-              <Printer className="h-4 w-4" /> Print
-            </button>
-          </div>
+          <DetailActions title={item.title} />
 
           <div className="prose mt-6 max-w-none space-y-4">
             {item.content.map((p, i) => (

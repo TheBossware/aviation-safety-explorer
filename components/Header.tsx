@@ -7,6 +7,7 @@ import { Search, Bell, ChevronDown } from "lucide-react";
 export default function Header({ title, subtitle }: { title: string; subtitle?: string }) {
   const router = useRouter();
   const [q, setQ] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-4 border-b border-gray-200 bg-white/80 px-8 backdrop-blur">
@@ -39,12 +40,36 @@ export default function Header({ title, subtitle }: { title: string; subtitle?: 
           <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
         </button>
 
-        <button className="flex items-center gap-2 rounded-lg border border-gray-200 py-1 pl-1 pr-2.5 transition hover:bg-gray-50">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-teal-500 text-xs font-semibold text-white">
-            JC
-          </div>
-          <ChevronDown className="h-4 w-4 text-slate-400" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setMenuOpen((o) => !o)}
+            className="flex items-center gap-2 rounded-lg border border-gray-200 py-1 pl-1 pr-2.5 transition hover:bg-gray-50"
+          >
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-teal-500 text-xs font-semibold text-white">
+              JC
+            </div>
+            <ChevronDown className={`h-4 w-4 text-slate-400 transition ${menuOpen ? "rotate-180" : ""}`} />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 z-20 mt-2 w-52 overflow-hidden rounded-xl border border-gray-100 bg-white py-1 shadow-lg">
+                <div className="border-b border-gray-100 px-4 py-3">
+                  <div className="text-sm font-semibold text-slate-800">Jordan Carter</div>
+                  <div className="text-xs text-slate-400">jordan.carter@safety.io</div>
+                </div>
+                {["Your profile", "Preferences", "Saved items"].map((label) => (
+                  <button key={label} className="block w-full px-4 py-2 text-left text-sm text-slate-600 transition hover:bg-gray-50">
+                    {label}
+                  </button>
+                ))}
+                <button className="block w-full border-t border-gray-100 px-4 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50">
+                  Sign out
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );
