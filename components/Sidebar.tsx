@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Newspaper, Search, Rss, ShieldCheck, Settings, LifeBuoy } from "lucide-react";
+import { LayoutDashboard, Compass, Database, ShieldCheck, Settings, LifeBuoy } from "lucide-react";
 import clsx from "clsx";
 
 const nav = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Feed", href: "/feed", icon: Newspaper },
-  { name: "Search", href: "/search", icon: Search },
-  { name: "Sources", href: "/sources", icon: Rss },
+  { name: "Browse", href: "/browse", icon: Compass },
+  { name: "Sources", href: "/sources", icon: Database },
 ];
 
 export default function Sidebar() {

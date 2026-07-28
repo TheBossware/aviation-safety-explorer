@@ -40,12 +40,12 @@ export default async function DetailPage({ params }: { params: Promise<{ id: str
         <nav className="flex items-center gap-1.5 text-sm text-slate-400">
           <Link href="/" className="hover:text-slate-600">Dashboard</Link>
           <ChevronRight className="h-3.5 w-3.5" />
-          <Link href="/feed" className="hover:text-slate-600">Feed</Link>
+          <Link href="/browse" className="hover:text-slate-600">Browse</Link>
           <ChevronRight className="h-3.5 w-3.5" />
           <span className="max-w-[240px] truncate font-medium text-slate-600">{item.title}</span>
         </nav>
-        <Link href="/feed" className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-gray-50">
-          <ArrowLeft className="h-4 w-4" /> Back to Feed
+        <Link href="/browse" className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-gray-50">
+          <ArrowLeft className="h-4 w-4" /> Back to Browse
         </Link>
       </div>
 

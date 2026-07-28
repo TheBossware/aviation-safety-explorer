@@ -91,8 +91,8 @@ export default function DashboardPage() {
             <h2 className="text-base font-semibold text-slate-900">Recent Items</h2>
             <p className="text-xs text-slate-500">Latest updates across all monitored sources</p>
           </div>
-          <Link href="/feed" className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700">
-            View feed <ChevronRight className="h-4 w-4" />
+          <Link href="/browse" className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700">
+            View all <ChevronRight className="h-4 w-4" />
           </Link>
         </div>
         <div className="divide-y divide-gray-100">

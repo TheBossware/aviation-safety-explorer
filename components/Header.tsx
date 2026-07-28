@@ -20,7 +20,7 @@ export default function Header({ title, subtitle }: { title: string; subtitle?: 
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            router.push(q.trim() ? `/search?q=${encodeURIComponent(q.trim())}` : "/search");
+            router.push(q.trim() ? `/browse?q=${encodeURIComponent(q.trim())}` : "/browse");
           }}
           className="hidden md:block"
         >
