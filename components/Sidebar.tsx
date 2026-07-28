@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Compass, Database, ShieldCheck, Settings, LifeBuoy } from "lucide-react";
+import { LayoutDashboard, Compass, Database, MessageSquare, ShieldCheck, Settings, LifeBuoy } from "lucide-react";
 import clsx from "clsx";
 
 const nav = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Browse", href: "/browse", icon: Compass },
   { name: "Sources", href: "/sources", icon: Database },
+  { name: "AI Chat", href: "/chat", icon: MessageSquare },
 ];
 
 export default function Sidebar() {

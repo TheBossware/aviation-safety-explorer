@@ -28,17 +28,23 @@ export default function SourcesPage() {
     e.preventDefault();
     if (!form.name.trim() || !form.url.trim()) return;
     const initials = form.name.trim().slice(0, 2).toUpperCase();
+    const domain = form.url.trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
     setList((prev) => [
       {
         id: `s${Date.now()}`,
         name: form.name.trim(),
+        domain,
         url: form.url.trim().replace(/^https?:\/\//, ""),
         category: form.category,
+        description: `User-added source in ${form.category}.`,
+        status: "active" as const,
+        itemCount: 0,
         active: true,
         lastUpdated: new Date().toISOString().slice(0, 10),
         items: 0,
         initials,
         color: palette[prev.length % palette.length],
+        logo: "",
       },
       ...prev,
     ]);

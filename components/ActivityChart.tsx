@@ -11,20 +11,25 @@ import {
 } from "recharts";
 import { activityData } from "@/lib/data";
 
+const series = [
+  { key: "alerts", name: "Alerts", color: "#ef4444" },
+  { key: "ads", name: "ADs", color: "#f97316" },
+  { key: "reports", name: "Reports", color: "#2563eb" },
+  { key: "advisories", name: "Advisories", color: "#16a34a" },
+];
+
 export default function ActivityChart() {
   return (
-    <div className="h-72 w-full">
+    <div className="h-80 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={activityData} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
           <defs>
-            <linearGradient id="itemsFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#1e40af" stopOpacity={0.25} />
-              <stop offset="95%" stopColor="#1e40af" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="alertsFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
-              <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-            </linearGradient>
+            {series.map((s) => (
+              <linearGradient key={s.key} id={`fill-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={s.color} stopOpacity={0.25} />
+                <stop offset="95%" stopColor={s.color} stopOpacity={0} />
+              </linearGradient>
+            ))}
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#eef2f6" vertical={false} />
           <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={1} />
@@ -37,8 +42,17 @@ export default function ActivityChart() {
               fontSize: 12,
             }}
           />
-          <Area type="monotone" dataKey="items" name="Items" stroke="#1e40af" strokeWidth={2.5} fill="url(#itemsFill)" />
-          <Area type="monotone" dataKey="alerts" name="Alerts" stroke="#ef4444" strokeWidth={2} fill="url(#alertsFill)" />
+          {series.map((s) => (
+            <Area
+              key={s.key}
+              type="monotone"
+              dataKey={s.key}
+              name={s.name}
+              stroke={s.color}
+              strokeWidth={2}
+              fill={`url(#fill-${s.key})`}
+            />
+          ))}
         </AreaChart>
       </ResponsiveContainer>
     </div>
