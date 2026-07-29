@@ -415,7 +415,8 @@
       "position": [
         3264,
         192
-      ]
+      ],
+      "disabled": true
     },
     {
       "parameters": {
@@ -442,7 +443,8 @@
           "name": "MongoDB account"
         }
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "disabled": true
     },
     {
       "parameters": {
@@ -455,7 +457,8 @@
       "position": [
         3712,
         192
-      ]
+      ],
+      "disabled": true
     },
     {
       "parameters": {
@@ -482,7 +485,8 @@
           "name": "OpenAI account"
         }
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "disabled": true
     },
     {
       "parameters": {
@@ -495,7 +499,8 @@
       "position": [
         4832,
         192
-      ]
+      ],
+      "disabled": true
     },
     {
       "parameters": {
@@ -602,6 +607,23 @@
       "position": [
         4160,
         192
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "## TODO: Deduplication Pipeline\nThe following nodes are temporarily disabled:\n- **Add Hash**: content hash generation\n- **MongoDB Find Existing**: fetch existing hashes from DB\n- **Hash Dedup**: filter already-seen items by hash\n- **Split In Batches**: process in groups of 10\n- **OpenAI Embedding**: generate vector embeddings\n- **AI Semantic Dedup**: cosine similarity dedup (threshold 0.9)\n\nRe-enable and reconnect when ready to implement dedup:\nFilter Valid → Add Hash → MongoDB Find Existing → Hash Dedup → Split In Batches → OpenAI Embedding → AI Semantic Dedup → Build Documents → MongoDB Insert",
+        "height": 360,
+        "width": 520,
+        "color": 4
+      },
+      "id": "cc000020-0000-0000-0000-000000000020",
+      "name": "TODO: Deduplication (disabled)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3264,
+        380
       ]
     }
   ],
@@ -801,61 +823,6 @@
       "main": [
         [
           {
-            "node": "Add Hash",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Add Hash": {
-      "main": [
-        [
-          {
-            "node": "MongoDB Find Existing",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "MongoDB Find Existing": {
-      "main": [
-        [
-          {
-            "node": "Hash Dedup",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Hash Dedup": {
-      "main": [
-        [
-          {
-            "node": "Split In Batches",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OpenAI Embedding": {
-      "main": [
-        [
-          {
-            "node": "AI Semantic Dedup",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "AI Semantic Dedup": {
-      "main": [
-        [
-          {
             "node": "Build Documents",
             "type": "main",
             "index": 0
@@ -901,29 +868,6 @@
         [
           {
             "node": "Normalize HTML",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Split In Batches": {
-      "main": [
-        [
-          {
-            "node": "OpenAI Embedding",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
-      ]
-    },
-    "MongoDB Insert": {
-      "main": [
-        [
-          {
-            "node": "Split In Batches",
             "type": "main",
             "index": 0
           }
