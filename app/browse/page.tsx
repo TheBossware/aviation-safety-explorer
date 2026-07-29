@@ -2,10 +2,10 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search as SearchIcon, X, ChevronDown, SlidersHorizontal } from "lucide-react";
+import { Search as SearchIcon, X, ChevronDown, SlidersHorizontal, Radio } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import ItemCard from "@/components/ItemCard";
-import { items, categories, ItemType, Severity } from "@/lib/data";
+import { items as mockItems, categories, ContentItem, ItemType, Severity } from "@/lib/data";
 
 const tabs: { label: string; type: ItemType | "All" }[] = [
   { label: "All", type: "All" },
@@ -17,17 +17,48 @@ const tabs: { label: string; type: ItemType | "All" }[] = [
 
 const severities: Severity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"];
 const dateRanges = ["Any time", "Last 7 days", "Last 30 days", "Last 90 days"];
-const allSources = Array.from(new Set(items.map((i) => i.source)));
 const severityRank: Record<Severity, number> = { CRITICAL: 5, HIGH: 4, MEDIUM: 3, LOW: 2, INFO: 1 };
 
 function daysBetween(dateStr: string) {
-  const now = new Date("2026-07-27T00:00:00").getTime();
-  const d = new Date(dateStr + "T00:00:00").getTime();
+  const now = Date.now();
+  const d = new Date(dateStr.length <= 10 ? dateStr + "T00:00:00" : dateStr).getTime();
+  if (isNaN(d)) return Infinity;
   return (now - d) / (1000 * 60 * 60 * 24);
+}
+
+function ResultsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="animate-pulse rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-gray-200" />
+            <div className="flex-1 space-y-2">
+              <div className="h-3 w-1/3 rounded bg-gray-200" />
+              <div className="h-2.5 w-1/4 rounded bg-gray-100" />
+            </div>
+          </div>
+          <div className="mt-4 space-y-2">
+            <div className="h-3.5 w-4/5 rounded bg-gray-200" />
+            <div className="h-3 w-full rounded bg-gray-100" />
+            <div className="h-3 w-2/3 rounded bg-gray-100" />
+          </div>
+          <div className="mt-4 flex gap-2">
+            <div className="h-5 w-14 rounded bg-gray-100" />
+            <div className="h-5 w-14 rounded bg-gray-100" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function BrowseInner() {
   const params = useSearchParams();
+  const [data, setData] = useState<ContentItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isLive, setIsLive] = useState(false);
+
   const [query, setQuery] = useState("");
   const [active, setActive] = useState<ItemType | "All">("All");
   const [sort, setSort] = useState("newest");
@@ -36,22 +67,48 @@ function BrowseInner() {
   const [srcs, setSrcs] = useState<string[]>([]);
   const [range, setRange] = useState("Any time");
 
+  // Fetch items from the server-side proxy (falls back to mock on the server).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/items", { cache: "no-store" });
+        if (!res.ok) throw new Error("bad status");
+        const json = await res.json();
+        if (cancelled) return;
+        setData(Array.isArray(json.items) && json.items.length ? json.items : mockItems);
+        setIsLive(Boolean(json.isLive));
+      } catch {
+        if (cancelled) return;
+        setData(mockItems);
+        setIsLive(false);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     setQuery(params.get("q") ?? "");
   }, [params]);
+
+  const allSources = useMemo(() => Array.from(new Set(data.map((i) => i.source))), [data]);
 
   const toggle = <T,>(val: T, list: T[], set: (v: T[]) => void) =>
     set(list.includes(val) ? list.filter((x) => x !== val) : [...list, val]);
 
   const counts = useMemo(() => {
-    const c: Record<string, number> = { All: items.length };
-    for (const t of ["Alert", "Warning", "Report", "Advisory"]) c[t] = items.filter((i) => i.type === t).length;
+    const c: Record<string, number> = { All: data.length };
+    for (const t of ["Alert", "Warning", "Report", "Advisory"]) c[t] = data.filter((i) => i.type === t).length;
     return c;
-  }, []);
+  }, [data]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let list = items.filter((i) => {
+    let list = data.filter((i) => {
       const matchQ =
         !q ||
         i.title.toLowerCase().includes(q) ||
@@ -72,13 +129,28 @@ function BrowseInner() {
     else if (sort === "oldest") list = [...list].sort((a, b) => a.date.localeCompare(b.date));
     else if (sort === "severity") list = [...list].sort((a, b) => severityRank[b.severity] - severityRank[a.severity]);
     return list;
-  }, [query, active, sort, sevs, cats, srcs, range]);
+  }, [data, query, active, sort, sevs, cats, srcs, range]);
 
   const activeFilters = sevs.length + cats.length + srcs.length + (range !== "Any time" ? 1 : 0);
   const clearAll = () => { setSevs([]); setCats([]); setSrcs([]); setRange("Any time"); };
 
   return (
     <>
+      {/* Connection status */}
+      <div className="mb-4 flex items-center gap-2">
+        {isLive ? (
+          <span className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
+            <span className="h-2 w-2 rounded-full bg-green-500" />
+            Live data
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-slate-500">
+            <span className="h-2 w-2 rounded-full bg-slate-400" />
+            Demo data
+          </span>
+        )}
+      </div>
+
       {/* Prominent search bar */}
       <div className="relative">
         <SearchIcon className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
@@ -169,9 +241,13 @@ function BrowseInner() {
             </FilterGroup>
 
             <FilterGroup title="Source" last>
-              {allSources.map((s) => (
-                <Check key={s} label={s} checked={srcs.includes(s)} onChange={() => toggle(s, srcs, setSrcs)} />
-              ))}
+              {allSources.length === 0 ? (
+                <p className="py-1 text-xs text-slate-400">No sources</p>
+              ) : (
+                allSources.map((s) => (
+                  <Check key={s} label={s} checked={srcs.includes(s)} onChange={() => toggle(s, srcs, setSrcs)} />
+                ))
+              )}
             </FilterGroup>
           </div>
         </aside>
@@ -179,13 +255,23 @@ function BrowseInner() {
         <div className="lg:col-span-3">
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm text-slate-500">
-              Showing <span className="font-semibold text-slate-800">{results.length}</span> of{" "}
-              <span className="font-semibold text-slate-800">{items.length}</span> results
-              {query && <> for “<span className="font-medium text-slate-700">{query}</span>”</>}
+              {loading ? (
+                <span className="inline-flex items-center gap-2 text-slate-400">
+                  <Radio className="h-4 w-4 animate-pulse" /> Loading items…
+                </span>
+              ) : (
+                <>
+                  Showing <span className="font-semibold text-slate-800">{results.length}</span> of{" "}
+                  <span className="font-semibold text-slate-800">{data.length}</span> results
+                  {query && <> for “<span className="font-medium text-slate-700">{query}</span>”</>}
+                </>
+              )}
             </p>
           </div>
 
-          {results.length ? (
+          {loading ? (
+            <ResultsSkeleton />
+          ) : results.length ? (
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
               {results.map((item) => (
                 <ItemCard key={item.id} item={item} />

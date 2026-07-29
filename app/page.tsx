@@ -1,15 +1,13 @@
 import Link from "next/link";
 import {
   Database, AlertTriangle, FileWarning, Globe, ArrowUpRight,
-  TrendingUp, ChevronRight, CircleDot,
+  ChevronRight, Radio,
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import ActivityChart from "@/components/ActivityChart";
 import SourceLogo from "@/components/SourceLogo";
-import {
-  items, stats, topSources, categoryCoverage, categoryColor,
-  severityStyles, typeStyles,
-} from "@/lib/data";
+import { categoryColor, severityStyles, typeStyles } from "@/lib/data";
+import { fetchDashboardData } from "@/lib/api";
 
 const iconMap = { Database, AlertTriangle, FileWarning, Globe };
 
@@ -21,15 +19,51 @@ const chartLegend = [
 ];
 
 function formatDate(d: string) {
-  return new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const dt = new Date(d.length <= 10 ? d + "T00:00:00" : d);
+  if (isNaN(dt.getTime())) return d;
+  return dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function DashboardPage() {
-  const recent = items.slice(0, 6);
-  const maxCoverage = Math.max(...categoryCoverage.map((c) => c.count));
+function ConnectionBadge({ live }: { live: boolean }) {
+  if (live) {
+    return (
+      <span className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+        </span>
+        Connected to live data
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-slate-500">
+      <span className="h-2 w-2 rounded-full bg-slate-400" />
+      Demo mode
+    </span>
+  );
+}
+
+export default async function DashboardPage() {
+  const data = await fetchDashboardData();
+  const { stats, recentItems, topSources, categoryCoverage, isLive, lastUpdated } = data;
+  const maxCoverage = Math.max(1, ...categoryCoverage.map((c) => c.count));
 
   return (
     <AppShell title="Dashboard" subtitle="Overview of your aviation safety intelligence activity">
+      {/* Connection status */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <ConnectionBadge live={isLive} />
+        {lastUpdated ? (
+          <span className="flex items-center gap-1.5 text-xs text-slate-400">
+            <Radio className="h-3.5 w-3.5" />
+            Last updated {formatDate(lastUpdated)}
+          </span>
+        ) : (
+          <span className="text-xs text-slate-400">Showing sample data — configure the API for live updates</span>
+        )}
+      </div>
+
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((s) => {
@@ -94,7 +128,7 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="divide-y divide-gray-100">
-            {recent.map((item) => {
+            {recentItems.map((item) => {
               const sev = severityStyles[item.severity];
               return (
                 <Link key={item.id} href={`/feed/${item.id}`} className="flex items-center gap-4 px-6 py-4 transition hover:bg-gray-50">
@@ -126,7 +160,7 @@ export default function DashboardPage() {
             <h2 className="text-base font-semibold text-slate-900">Category Coverage</h2>
             <Link href="/sources" className="text-xs font-medium text-blue-600 hover:text-blue-700">View all</Link>
           </div>
-          <p className="text-xs text-slate-500">Sources monitored per category</p>
+          <p className="text-xs text-slate-500">{isLive ? "Items per category" : "Sources monitored per category"}</p>
           <div className="mt-4 space-y-3">
             {categoryCoverage.slice(0, 10).map((c) => (
               <div key={c.category}>
@@ -151,34 +185,25 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-slate-900">Top Sources</h2>
-            <p className="text-xs text-slate-500">Highest-activity safety sources this week</p>
+            <p className="text-xs text-slate-500">{isLive ? "Most active sources in the live feed" : "Highest-activity safety sources this week"}</p>
           </div>
           <Link href="/sources" className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700">
             View all <ChevronRight className="h-4 w-4" />
           </Link>
         </div>
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-2">
-          {topSources.map((s) => (
-            <div key={s.name} className="flex gap-4 rounded-xl border border-gray-100 p-4 transition hover:border-blue-200 hover:shadow-sm">
-              <SourceLogo domain={s.domain} initials={s.initials} color={s.color} name={s.name} size={44} />
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {topSources.map((s, i) => (
+            <div key={`${s.name}-${i}`} className="flex items-center gap-4 rounded-xl border border-gray-100 p-4 transition hover:border-blue-200 hover:shadow-sm">
+              <SourceLogo domain={s.name} initials={s.initials} color={s.color} name={s.name} size={44} />
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-sm font-semibold text-slate-900">{s.name}</span>
-                  <span className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-green-600">
-                    <TrendingUp className="h-3 w-3" />{s.trend}
-                  </span>
-                </div>
+                <div className="truncate text-sm font-semibold text-slate-900">{s.name}</div>
                 <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold text-white ${categoryColor(s.category)}`}>
                   {s.category}
                 </span>
-                <p className="mt-1.5 line-clamp-2 text-xs text-slate-500">{s.description}</p>
-                <div className="mt-2 flex items-center gap-3 text-xs text-slate-400">
-                  <span className="font-medium text-slate-600">{s.items} items</span>
-                  <span className="flex items-center gap-1">
-                    <CircleDot className={`h-3 w-3 ${s.status === "active" ? "text-green-500" : "text-slate-300"}`} />
-                    {s.status === "active" ? "Active" : "Inactive"}
-                  </span>
-                </div>
+              </div>
+              <div className="shrink-0 text-right">
+                <div className="text-lg font-bold text-slate-900">{s.count}</div>
+                <div className="text-[11px] text-slate-400">items</div>
               </div>
             </div>
           ))}
