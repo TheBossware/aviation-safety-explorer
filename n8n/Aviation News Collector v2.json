@@ -365,92 +365,8 @@
     },
     {
       "parameters": {
-        "text": "={{ $json.page_text }}",
-        "attributes": {
-          "attributes": [
-            {
-              "name": "is_relevant",
-              "type": "boolean",
-              "description": "true only if the page is an aviation news article, press release, safety notice, or airworthiness directive (AD). false for index/listing/navigation/contact/marketing/other pages.",
-              "required": true
-            },
-            {
-              "name": "content_type",
-              "description": "one of: news, article, ad, other"
-            },
-            {
-              "name": "title",
-              "description": "the main headline/title of the article"
-            },
-            {
-              "name": "summary",
-              "description": "a concise 1-2 sentence summary of the article content"
-            },
-            {
-              "name": "published_at",
-              "description": "publication date in ISO 8601 format if present on the page, otherwise empty string"
-            },
-            {
-              "name": "category",
-              "description": "one of: Airworthiness Directive, Airbus, Boeing, Safety, General"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "f9813daa-f089-4afd-acfd-aa2184247415",
-      "name": "Classify Subpage",
-      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
-      "typeVersion": 1.2,
-      "position": [
-        2016,
-        448
-      ],
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "model": {
-          "__rl": true,
-          "value": "gpt-4.1-nano",
-          "mode": "list",
-          "cachedResultName": "gpt-4.1-nano"
-        },
-        "builtInTools": {},
-        "options": {}
-      },
-      "id": "c806aa2e-f43f-42ac-a571-a74b4ba69e8c",
-      "name": "OpenAI Chat Model",
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.3,
-      "position": [
-        2096,
-        672
-      ],
-      "credentials": {
-        "openAiApi": {
-          "id": "ADk9oW93Uw0qrC7M",
-          "name": "OpenAI account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "return $input.all().filter(i => {\n  const o = (i.json && i.json.output) ? i.json.output : (i.json || {});\n  return o && (o.is_relevant === true || o.is_relevant === 'true');\n});"
-      },
-      "id": "23c6b611-39bf-4274-a4d4-f1019f92c2df",
-      "name": "Filter Relevant",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2368,
-        448
-      ]
-    },
-    {
-      "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "let src = {};\ntry { src = $('Pick Subpages').item.json || {}; } catch (e) { src = {}; }\nconst o = ($json.output) ? $json.output : $json;\n\n// Get full body text from Extract Content step\nlet fullContent = '';\ntry { fullContent = $('Extract Content').item.json.body_text || ''; } catch(e) {}\n\n// Use full body_text as content (up to 20000 chars), GPT summary as summary\nconst content = String(fullContent || o.summary || '').slice(0, 20000);\n\nreturn { json: {\n  source_id: src.source_id || '',\n  source_name: src.source_name || '',\n  source_type: 'html',\n  title: o.title || src.anchor_text || '',\n  url: src.sub_url || '',\n  content: content,\n  summary: o.summary || '',\n  published_at: (o.published_at && String(o.published_at).trim()) ? o.published_at : null,\n  fetched_at: new Date().toISOString()\n} };"
+        "jsCode": "let src = {};\ntry { src = $('Pick Subpages').item.json || {}; } catch(e) {}\n\n// Classify & Extract node'undan gelen GPT sonucu\nconst cls = $json.classification || {};\n\n// Ham body_text'i de al (tam içerik)\nlet fullContent = '';\ntry { fullContent = $('Extract Content').item.json.body_text || ''; } catch(e) {}\n\nreturn { json: {\n  source_id:   src.source_id || '',\n  source_name: src.source_name || '',\n  source_type: 'html',\n  title:       cls.title || src.anchor_text || '',\n  url:         src.sub_url || '',\n  content:     String(fullContent || cls.summary || '').slice(0, 20000),\n  summary:     cls.summary || '',\n  category:    cls.category || 'General',\n  severity:    cls.severity || 'INFO',\n  tags:        cls.tags || [],\n  classification_reasoning: cls.reasoning || '',\n  published_at: (cls.published_at && String(cls.published_at).trim()) ? cls.published_at : null,\n  fetched_at:  new Date().toISOString()\n} };"
       },
       "id": "216c033e-6b1b-46a4-8658-422fcbb81e30",
       "name": "Normalize HTML",
@@ -622,41 +538,15 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "// ================================================================\n// ✏️  KATEGORİZASYON PROMPT'U — istediğin zaman buradan düzenle\n// ================================================================\n\nconst CATEGORIES = [\n  'Airworthiness Directive',  // FAA/EASA/CASA tarafından yayımlanan zorunlu direktif\n  'Accident Report',          // Ölümlü kaza, hull loss, resmi kaza soruşturması\n  'Incident Report',          // Yaralanmasız olay, near-miss, pist ihlali\n  'Safety Alert',             // SAFO, InFO, acil güvenlik bildirimi\n  'Safety Bulletin',          // Zorunlu olmayan güvenlik tavsiyesi\n  'Regulatory Update',        // Yeni yönetmelik, kural değişikliği\n  'Technical Notice',         // Bakım, servis bülteni (AD dışı)\n  'Industry News',            // Genel havacılık haberi, finansal, operasyonel\n  'General'                   // Hiçbirine uymayan\n];\n\nconst SEVERITY_GUIDE = `\nCRITICAL : Ölümlü kaza, hull loss, çok sayıda kayıp onaylandı\nHIGH     : Airworthiness directive, serious incident, uçuşta motor yangını, acil tahliye\nMEDIUM   : Potansiyel yaralanma riski olan olay, ihtiyati iniş, safety bulletin\nLOW      : Tavsiye niteliğinde, yaralanmasız, bilgilendirme amaçlı\nINFO     : Genel haber, sektör güncellemesi, güvenlikle doğrudan ilgisiz\n`;\n\nconst AVAILABLE_TAGS = [\n  // Üreticiler\n  'Airbus','Boeing','Embraer','ATR','Bombardier','Cessna','Piper',\n  // Uçak tipleri (sık)\n  'A320','A330','A350','A380','B737','B737 MAX','B777','B787',\n  // Sistem/arıza\n  'Engine Failure','Landing Gear','Fire','Bird Strike','Runway Excursion',\n  'TCAS/ACAS','Weather','ATC','Fuel','Structural','Electrical','Hydraulics',\n  'Pressurization','Windshield','Flaps/Slats',\n  // Faz\n  'Go-Around','CFIT','Loss of Control','Tail Strike','Hard Landing',\n  // Kurum\n  'FAA','EASA','ICAO','NTSB','AAIB','BEA','ATSB','TSB','TAIC'\n];\n\nconst SYSTEM_PROMPT = \\`Sen uzman bir havacılık güvenliği analistisi ve içerik sınıflandırıcısısın.\n\nSana bir havacılık haberi/güvenlik öğesinin başlığı ve özeti verilecek.\nAşağıdaki kurallara göre JSON formatında sınıflandırma yapacaksın.\n\nKATEGORİLER (tam olarak birini seç):\n\\${CATEGORIES.map((c,i) => \\`\\${i+1}. \\${c}\\`).join('\\n')}\n\nCİDDİYET (tam olarak birini seç):\n\\${SEVERITY_GUIDE}\n\nETİKETLER: Listeden 1-5 etiket seç. Listede yoksa spesifik uçak tipini ekleyebilirsin (ör. \"A320neo\").\n\nSADECE aşağıdaki JSON formatını döndür (markdown yok, açıklama yok):\n{\n  \"category\": \"...\",\n  \"severity\": \"...\",\n  \"tags\": [\"...\", \"...\"],\n  \"reasoning\": \"tek cümle Türkçe açıklama\"\n}\\`;\n\nconst j = $json;\nconst userContent = \\`Başlık: \\${j.title || '(başlık yok)'}\nÖzet: \\${(j.summary || j.content || '').slice(0, 1000)}\nKaynak: \\${j.source_name || 'Bilinmiyor'}\nMevcut kategori: \\${j.category || 'belirlenmedi'}\\`;\n\nreturn { json: { ...j, _prompt_system: SYSTEM_PROMPT, _prompt_user: userContent } };"
+        "jsCode": "// ================================================================\n// ✏️  BURASI SENİN KONTROL ALANIN — istediğinde düzenle\n// Kategoriler, severity kuralları, tag listesi hepsi burada\n// ================================================================\n\nconst SYSTEM_PROMPT = `Sen uzman bir havacılık güvenliği analistisisin.\nSana bir web sayfasının ham metni verilecek.\nAşağıdaki JSON formatında yanıt ver, başka hiçbir şey yazma.\n\nKATEGORİLER (tam olarak birini seç):\n- Airworthiness Directive : FAA/EASA/CASA tarafından yayımlanan zorunlu direktif\n- Accident Report         : Ölümlü kaza, hull loss, resmi kaza soruşturması\n- Incident Report         : Yaralanmasız olay, near-miss, pist ihlali, precautionary landing\n- Safety Alert            : SAFO, InFO, acil güvenlik bildirimi\n- Safety Bulletin         : Zorunlu olmayan güvenlik tavsiyesi\n- Regulatory Update       : Yeni yönetmelik, kural değişikliği, NOTAM\n- Technical Notice        : Bakım, servis bülteni (AD dışı)\n- Industry News           : Genel havacılık haberi, finansal, operasyonel\n- General                 : Hiçbirine uymayan\n\nCİDDİYET (tam olarak birini seç):\n- CRITICAL : Ölümlü kaza, hull loss, çok sayıda kayıp onaylandı\n- HIGH     : Airworthiness directive, serious incident, uçuşta motor yangını, acil tahliye\n- MEDIUM   : Potansiyel yaralanma riski olan olay, ihtiyati iniş, safety bulletin\n- LOW      : Tavsiye niteliğinde, yaralanmasız, bilgilendirme amaçlı\n- INFO     : Genel haber, sektör güncellemesi, güvenlikle doğrudan ilgisiz\n\nETİKETLER (1-5 arası seç, listeden veya spesifik uçak tipi ekle):\nÜreticiler: Airbus, Boeing, Embraer, ATR, Bombardier\nTipler: A320, A330, A350, A380, B737, B737 MAX, B777, B787\nArızalar: Engine Failure, Landing Gear, Fire, Bird Strike, Runway Excursion,\n          TCAS, Weather, Fuel, Structural, Electrical, Hydraulics, Windshield\nFazlar: Go-Around, CFIT, Loss of Control, Tail Strike, Hard Landing\nKurumlar: FAA, EASA, ICAO, NTSB, AAIB, BEA, ATSB, TSB\n\nYANIT FORMATI (sadece JSON, başka hiçbir şey yazma):\n{\n  \"is_relevant\": true ya da false,\n  \"title\": \"makalenin ana başlığı\",\n  \"summary\": \"2-3 cümle Türkçe özet\",\n  \"published_at\": \"ISO 8601 tarih veya boş string\",\n  \"category\": \"yukarıdan biri\",\n  \"severity\": \"yukarıdan biri\",\n  \"tags\": [\"etiket1\", \"etiket2\"],\n  \"reasoning\": \"neden bu kategori ve severity seçildi, tek cümle\"\n}\n\nis_relevant false olduğunda diğer alanları boş bırakabilirsin.\nKaza/olay haberi değilse, index/liste/navigasyon sayfasıysa is_relevant=false yap.`;\n\n// ── Sayfa verisini al ────────────────────────────────────────────────────────\nconst j = $json;\nconst pageText = String(j.page_text || '').slice(0, 12000);\n\nlet src = {};\ntry { src = $('Pick Subpages').item.json || {}; } catch(e) {}\n\nconst USER_CONTENT = `Kaynak: ${src.source_name || 'Bilinmiyor'}\nURL: ${src.sub_url || ''}\n\n--- SAYFA METNİ ---\n${pageText}`;\n\n// ── OpenAI API çağrısı ───────────────────────────────────────────────────────\nconst OPENAI_KEY = $credentials?.openAiApi?.apiKey || '';\n\nlet classification = {\n  is_relevant: false, title: '', summary: '',\n  published_at: '', category: 'General',\n  severity: 'INFO', tags: [], reasoning: ''\n};\n\ntry {\n  const response = await $http.request({\n    method: 'POST',\n    url: 'https://api.openai.com/v1/chat/completions',\n    headers: {\n      'Authorization': `Bearer ${OPENAI_KEY}`,\n      'Content-Type': 'application/json'\n    },\n    body: JSON.stringify({\n      model: 'gpt-4.1-nano',\n      messages: [\n        { role: 'system', content: SYSTEM_PROMPT },\n        { role: 'user',   content: USER_CONTENT }\n      ],\n      response_format: { type: 'json_object' },\n      temperature: 0,\n      max_tokens: 300\n    })\n  });\n  const raw = response.choices[0].message.content;\n  classification = JSON.parse(raw);\n} catch(e) {\n  classification.reasoning = 'GPT hatası: ' + String(e).slice(0, 100);\n}\n\n// is_relevant false ise boş döndür — sonraki node'lar bunu atlayacak\nif (!classification.is_relevant) return null;\n\nreturn { json: { ...j, classification } };"
       },
-      "id": "bb000001-0000-0000-0000-000000000001",
-      "name": "Build Prompt",
+      "id": "cc000001-0000-0000-0000-000000000001",
+      "name": "Classify & Extract",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3936,
-        192
-      ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.openai.com/v1/chat/completions",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "openAiApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={ \"model\": \"gpt-4.1-nano\", \"messages\": [{\"role\": \"system\", \"content\": {{ JSON.stringify($json._prompt_system) }}},{\"role\": \"user\", \"content\": {{ JSON.stringify($json._prompt_user) }}}], \"response_format\": {\"type\": \"json_object\"}, \"temperature\": 0, \"max_tokens\": 250 } }",
-        "options": {
-          "response": {
-            "response": {
-              "neverError": true
-            }
-          }
-        }
-      },
-      "id": "bb000002-0000-0000-0000-000000000002",
-      "name": "OpenAI Classify",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        4160,
-        192
+        2016,
+        448
       ],
       "credentials": {
         "openAiApi": {
@@ -665,20 +555,6 @@
         }
       },
       "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "let orig = {};\ntry { orig = $('Build Prompt').item.json || {}; } catch(e) { orig = {}; }\n\nconst resp = $json;\nlet cls = { category: orig.category || 'General', severity: 'INFO', tags: orig.tags || [], reasoning: '' };\n\ntry {\n  const raw = resp.choices && resp.choices[0] ? resp.choices[0].message.content : '{}';\n  const parsed = JSON.parse(raw);\n  if (parsed.category) cls.category = parsed.category;\n  if (parsed.severity) cls.severity = parsed.severity;\n  if (Array.isArray(parsed.tags) && parsed.tags.length) cls.tags = parsed.tags;\n  if (parsed.reasoning) cls.reasoning = parsed.reasoning;\n} catch(e) {\n  // GPT parse hatası — mevcut değerleri koru\n}\n\n// _prompt_ alanlarını temizle\nconst { _prompt_system, _prompt_user, ...cleanOrig } = orig;\n\nreturn { json: {\n  ...cleanOrig,\n  category: cls.category,\n  severity: cls.severity,\n  tags: cls.tags,\n  classification_reasoning: cls.reasoning\n} };"
-      },
-      "id": "bb000003-0000-0000-0000-000000000003",
-      "name": "Apply Classification",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        4384,
-        192
-      ]
     }
   ],
   "pinData": {},
@@ -844,40 +720,7 @@
       "main": [
         [
           {
-            "node": "Classify Subpage",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Classify Subpage": {
-      "main": [
-        [
-          {
-            "node": "Filter Relevant",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OpenAI Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Classify Subpage",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Filter Relevant": {
-      "main": [
-        [
-          {
-            "node": "Normalize HTML",
+            "node": "Classify & Extract",
             "type": "main",
             "index": 0
           }
@@ -943,7 +786,7 @@
       "main": [
         [
           {
-            "node": "Build Prompt",
+            "node": "OpenAI Embedding",
             "type": "main",
             "index": 0
           }
@@ -983,33 +826,11 @@
         ]
       ]
     },
-    "Build Prompt": {
+    "Classify & Extract": {
       "main": [
         [
           {
-            "node": "OpenAI Classify",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OpenAI Classify": {
-      "main": [
-        [
-          {
-            "node": "Apply Classification",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Apply Classification": {
-      "main": [
-        [
-          {
-            "node": "OpenAI Embedding",
+            "node": "Normalize HTML",
             "type": "main",
             "index": 0
           }
