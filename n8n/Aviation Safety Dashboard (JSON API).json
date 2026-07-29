@@ -1,0 +1,163 @@
+{
+  "name": "Aviation Safety Dashboard (JSON API)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "aviation-dashboard",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "cf6817f9-59ac-4b63-8ca4-5c8d5d693742",
+      "name": "GET /aviation-dashboard",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "329f4c7c-bd41-4710-9b91-0cba77402380"
+    },
+    {
+      "parameters": {
+        "collection": "aviation_news",
+        "options": {
+          "limit": 200,
+          "sort": "{ \"published_at\": -1, \"fetched_at\": -1 }",
+          "projection": "{ \"embedding\": 0 }"
+        }
+      },
+      "id": "1e0d983b-618b-40a7-9e09-2b58fe9ebe37",
+      "name": "MongoDB Find News",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        0
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "mongoDb": {
+          "id": "VhFqxpZVPCdTF4CD",
+          "name": "MongoDB account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "2f6517a4-b8ac-462c-951f-674741f169c1",
+      "name": "Aggregate News",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Reads the aggregated Mongo docs and emits the JSON contract that the\n// Safety Explorer site (lib/api.ts -> ApiResponse) consumes.\nvar input = $input.all()[0];\nvar raw = (input && input.json && Array.isArray(input.json.data)) ? input.json.data : [];\nvar docs = raw.filter(function (d) { return d && Object.keys(d).length > 0; });\n\nfunction str(v) { return (v === null || v === undefined) ? \"\" : String(v); }\n\nvar items = docs.map(function (d, i) {\n  var sourceName = str(d.source_name || d.source_id) || \"Unknown Source\";\n  var id = str(d.content_hash || d._id || d.url) || String(i + 1);\n  var tags = Array.isArray(d.tags) ? d.tags : (d.tags ? [d.tags] : []);\n  return {\n    id: id,\n    title: str(d.title) || \"(untitled)\",\n    summary: str(d.summary),\n    content: str(d.content),\n    url: str(d.url),\n    publishedAt: d.published_at || null,\n    fetchedAt: d.fetched_at || null,\n    category: str(d.category) || \"Aviation News\",\n    tags: tags,\n    sourceName: sourceName,\n    sourceId: str(d.source_id)\n  };\n});\n\n// ---- aggregate stats -------------------------------------------------------\nvar sourceCounts = {};\nvar categoryCounts = {};\nvar lastItemDate = null;\nvar adCount = 0;\n\nitems.forEach(function (it) {\n  if (it.sourceName) sourceCounts[it.sourceName] = (sourceCounts[it.sourceName] || 0) + 1;\n  if (it.category) categoryCounts[it.category] = (categoryCounts[it.category] || 0) + 1;\n  if (it.category === \"Airworthiness Directive\" || (it.tags || []).indexOf(\"AD\") >= 0) adCount++;\n  var d = it.publishedAt || it.fetchedAt;\n  if (d && (!lastItemDate || String(d) > String(lastItemDate))) lastItemDate = d;\n});\n\nfunction toSortedArray(obj) {\n  return Object.keys(obj)\n    .map(function (name) { return { name: name, count: obj[name] }; })\n    .sort(function (a, b) { return b.count - a.count; });\n}\n\nvar topSources = toSortedArray(sourceCounts);\nvar categoryBreakdown = toSortedArray(categoryCounts);\n\nvar response = {\n  ok: true,\n  generatedAt: new Date().toISOString(),\n  lastItemDate: lastItemDate,\n  stats: {\n    total: items.length,\n    sources: Object.keys(sourceCounts).length,\n    adCount: adCount,\n    categories: Object.keys(categoryCounts).length\n  },\n  topSources: topSources,\n  categoryBreakdown: categoryBreakdown,\n  items: items\n};\n\nreturn [{ json: response }];\n"
+      },
+      "id": "2eb51ef7-351d-4957-91b1-36a8b8cdbbe7",
+      "name": "Build JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "3e5fcb69-4ca6-49d4-bbb3-6653ded8a987",
+      "name": "Respond JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        896,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "GET /aviation-dashboard": {
+      "main": [
+        [
+          {
+            "node": "MongoDB Find News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB Find News": {
+      "main": [
+        [
+          {
+            "node": "Aggregate News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate News": {
+      "main": [
+        [
+          {
+            "node": "Build JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build JSON": {
+      "main": [
+        [
+          {
+            "node": "Respond JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9deb521ce4255926f3759de68b76f005802ef41e8cdc333213f1fbdd31bf86f8"
+  },
+  "nodeGroups": [],
+  "tags": []
+}

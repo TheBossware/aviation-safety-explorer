@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { fetchItems } from "@/lib/api";
 
-// Cache the proxied response for 60 seconds at the route level.
-export const revalidate = 60;
+// Always run this route at request time (never statically generate at build).
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/items

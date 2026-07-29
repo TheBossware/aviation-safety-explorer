@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchItemById } from "@/lib/api";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/items/[id]
