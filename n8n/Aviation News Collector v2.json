@@ -1,0 +1,1033 @@
+{
+  "name": "Aviation News Collector v2",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "a59faa6b-1338-4cf7-b228-1bbc73738926",
+      "name": "Every 6h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "find",
+        "collection": "sources",
+        "query": "{ \"active\": true }",
+        "options": {
+          "sort": "{ \"name\": 1 }",
+          "projection": "{ \"_id\": 0 }"
+        }
+      },
+      "id": "32483110-5bd2-469b-9413-85844edaf65e",
+      "name": "Load Sources",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        192
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "mongoDb": {
+          "id": "VhFqxpZVPCdTF4CD",
+          "name": "MongoDB account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "id": "c0d65ef8-bf3d-4611-b547-7deb98acb981",
+      "name": "Run Manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "rss",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "5f384f9c-b1a6-411a-8a8b-3d1918acd2ad"
+                  },
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "youtube",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "92795bc3-f67f-4e4b-b775-cdb5971d3273"
+                  },
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "podcast",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e7fd3479-42f0-49cf-8d8c-eb3838769305"
+                  }
+                ],
+                "combinator": "or"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "json",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0d3b296b-9787-448c-b3cc-f27cc56d3ad1"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "html",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "fbc2f3ef-d070-4d9c-afa2-ab027e813c3b"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c981ce85-fceb-4e39-b46c-e511a9e2ba98",
+      "name": "Route By Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "ignoreSSL": false
+        }
+      },
+      "id": "b17ee21c-3159-4fb4-a1dd-c6405be7aa34",
+      "name": "RSS Read",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        2368,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let src = {};\ntry { src = $('Route By Type').item.json || {}; } catch (e) { src = {}; }\nconst j = $json;\nreturn { json: {\n  source_id: src.id || '',\n  source_name: src.name || '',\n  source_type: src.type || 'rss',\n  title: j.title || '',\n  url: j.link || j.url || j.guid || '',\n  content: j.content || j['content:encoded'] || j.contentSnippet || '',\n  summary: j.contentSnippet || j.summary || j.description || '',\n  published_at: j.isoDate || j.pubDate || null,\n  fetched_at: new Date().toISOString()\n} };"
+      },
+      "id": "485d1671-3f73-4102-a82f-ecf79926bef7",
+      "name": "Normalize RSS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2592,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "156fe356-7821-481e-9342-97a32acb9ad2",
+      "name": "HTTP JSON",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2368,
+        192
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sources = $('Load Sources').all().map(i => i.json).filter(s => s.type === 'json');\nconst responses = $input.all();\nconst out = [];\nresponses.forEach((r, i) => {\n  const src = sources[i] || {};\n  const body = (r && r.json) ? r.json : {};\n  let list = [];\n  if (Array.isArray(body)) list = body;\n  else list = body.items || body.articles || body.results || body.data || body.entries || [];\n  if ((!Array.isArray(list) || list.length === 0) && (body.title || body.headline)) list = [body];\n  (Array.isArray(list) ? list : []).forEach(a => {\n    out.push({ json: {\n      source_id: src.id || '',\n      source_name: src.name || '',\n      source_type: 'json',\n      title: a.title || a.headline || a.name || '',\n      url: a.url || a.link || a.href || src.url || '',\n      content: a.content || a.body || a.description || a.summary || '',\n      summary: a.summary || a.description || a.abstract || '',\n      published_at: a.published_at || a.publishedAt || a.date || a.pubDate || null,\n      fetched_at: new Date().toISOString()\n    } });\n  });\n});\nreturn out;"
+      },
+      "id": "a3e7217d-efbe-4767-a62c-3a5362a54701",
+      "name": "Normalize JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2592,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "a94b11f7-d047-4621-8b2c-b7e3c14bb57e",
+      "name": "HTTP HTML",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        672,
+        448
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "titles",
+              "cssSelector": "a",
+              "returnArray": true
+            },
+            {
+              "key": "links",
+              "cssSelector": "a",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cc11c143-febc-4879-8752-7a0b92cc6880",
+      "name": "Extract Links",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        896,
+        448
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sources = $('Load Sources').all().map(i => i.json).filter(s => s.type === 'html');\nconst responses = $input.all();\nconst kw = /news|article|press|release|directive|airworthiness|\\bad\\b|safety|notice|bulletin|report|incident|advisory|alert/i;\nconst skip = /\\/(about|contact|privacy|terms|login|register|cookie|sitemap)\\b/i;\nconst MAX = 15;\nconst out = [];\nresponses.forEach((r, i) => {\n  const src = sources[i] || {};\n  const j = (r && r.json) ? r.json : {};\n  const titles = Array.isArray(j.titles) ? j.titles : (j.titles ? [j.titles] : []);\n  const links = Array.isArray(j.links) ? j.links : (j.links ? [j.links] : []);\n  const seen = new Set();\n  let count = 0;\n  let origin = ''; let base = String(src.url || '');\n  const m = base.match(/^(https?:\\/\\/[^\\/]+)/i); if (m) origin = m[1];\n  const baseNoQuery = base.replace(/[?#].*$/, '').replace(/\\/[^\\/]*$/, '/');\n  titles.forEach((t, idx) => {\n    if (count >= MAX) return;\n    const anchor = String(t || '').trim();\n    let link = String(links[idx] || '').trim();\n    if (!link) return;\n    if (link.indexOf('http') !== 0) {\n      if (link.indexOf('//') === 0) { link = 'https:' + link; }\n      else if (link.indexOf('/') === 0) { link = origin + link; }\n      else if (link.indexOf('#') === 0 || link.indexOf('mailto:') === 0 || link.indexOf('javascript:') === 0) { return; }\n      else { link = baseNoQuery + link; }\n    }\n    if (link.indexOf('http') !== 0) return;\n    if (skip.test(link)) return;\n    const hay = (anchor + ' ' + link).toLowerCase();\n    if (!kw.test(hay)) return;\n    if (seen.has(link)) return;\n    seen.add(link); count++;\n    out.push({ json: { source_id: src.id || '', source_name: src.name || '', source_url: src.url || '', sub_url: link, anchor_text: anchor } });\n  });\n});\nreturn out;"
+      },
+      "id": "78b4680a-84b3-4a34-be78-eaccf5bbf2ec",
+      "name": "Pick Subpages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.sub_url }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 3
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "2be6b78d-77ce-4ca4-ae8c-843b215a46eb",
+      "name": "HTTP Subpage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1344,
+        448
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "page_title",
+              "cssSelector": "title"
+            },
+            {
+              "key": "h1",
+              "cssSelector": "h1"
+            },
+            {
+              "key": "body_text",
+              "cssSelector": "body"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "786c07e0-a207-4d31-85ca-c121944282c8",
+      "name": "Extract Content",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1568,
+        448
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\nconst parts = [j.h1, j.page_title, j.body_text].filter(Boolean).join('\\n');\nreturn { json: { page_text: String(parts || '').slice(0, 15000) } };"
+      },
+      "id": "8375ec0f-e04d-440f-965b-d7c71cd494b1",
+      "name": "Prep Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.page_text }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "is_relevant",
+              "type": "boolean",
+              "description": "true only if the page is an aviation news article, press release, safety notice, or airworthiness directive (AD). false for index/listing/navigation/contact/marketing/other pages.",
+              "required": true
+            },
+            {
+              "name": "content_type",
+              "description": "one of: news, article, ad, other"
+            },
+            {
+              "name": "title",
+              "description": "the main headline/title of the article"
+            },
+            {
+              "name": "summary",
+              "description": "a concise 1-2 sentence summary of the article content"
+            },
+            {
+              "name": "published_at",
+              "description": "publication date in ISO 8601 format if present on the page, otherwise empty string"
+            },
+            {
+              "name": "category",
+              "description": "one of: Airworthiness Directive, Airbus, Boeing, Safety, General"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f9813daa-f089-4afd-acfd-aa2184247415",
+      "name": "Classify Subpage",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        2016,
+        448
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-nano",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-nano"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "c806aa2e-f43f-42ac-a571-a74b4ba69e8c",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2096,
+        672
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "ADk9oW93Uw0qrC7M",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().filter(i => {\n  const o = (i.json && i.json.output) ? i.json.output : (i.json || {});\n  return o && (o.is_relevant === true || o.is_relevant === 'true');\n});"
+      },
+      "id": "23c6b611-39bf-4274-a4d4-f1019f92c2df",
+      "name": "Filter Relevant",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2368,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let src = {};\ntry { src = $('Pick Subpages').item.json || {}; } catch (e) { src = {}; }\nconst o = ($json.output) ? $json.output : $json;\n\n// Get full body text from Extract Content step\nlet fullContent = '';\ntry { fullContent = $('Extract Content').item.json.body_text || ''; } catch(e) {}\n\n// Use full body_text as content (up to 20000 chars), GPT summary as summary\nconst content = String(fullContent || o.summary || '').slice(0, 20000);\n\nreturn { json: {\n  source_id: src.source_id || '',\n  source_name: src.source_name || '',\n  source_type: 'html',\n  title: o.title || src.anchor_text || '',\n  url: src.sub_url || '',\n  content: content,\n  summary: o.summary || '',\n  published_at: (o.published_at && String(o.published_at).trim()) ? o.published_at : null,\n  fetched_at: new Date().toISOString()\n} };"
+      },
+      "id": "216c033e-6b1b-46a4-8658-422fcbb81e30",
+      "name": "Normalize HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2592,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "9a4f5d5a-2395-403b-a6bc-b384240cbc34",
+      "name": "Merge Sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2816,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().filter(i => i.json && String(i.json.title || '').trim() && String(i.json.url || '').trim());"
+      },
+      "id": "835a5140-cacc-4599-91a5-f4eb2de9f0be",
+      "name": "Filter Valid",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3040,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function norm(s){ return String(s||'').toLowerCase().normalize('NFKD').replace(/[^a-z0-9 ]/g,' ').replace(/\\s+/g,' ').trim(); }\nfunction normUrl(u){ return String(u||'').toLowerCase().replace(/^https?:\\/\\//,'').replace(/[?#].*$/,'').replace(/\\/$/,''); }\nfunction hash(str){ let h=5381; for(let i=0;i<str.length;i++){ h=((h<<5)+h)+str.charCodeAt(i); h=h&0xffff; } return (h>>>0).toString(16); }\nconst j = $json;\nconst tn = norm(j.title);\nconst ch = hash(tn + '|' + normUrl(j.url));\n// Keep existing category from HTML GPT path; others will be overwritten by LLM Classify\nreturn { json: Object.assign({}, j, {\n  title_normalized: tn,\n  content_hash: ch,\n  category: j.category || 'General',\n  severity: j.severity || 'INFO',\n  tags: j.tags || []\n}) };"
+      },
+      "id": "132e4598-e541-40c7-887e-ef009ed624a1",
+      "name": "Add Hash",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3264,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "collection": "aviation_news",
+        "options": {
+          "limit": 1000,
+          "sort": "{ \"fetched_at\": -1 }",
+          "projection": "{ \"content_hash\": 1, \"url\": 1, \"embedding\": 1, \"dedup_group_id\": 1, \"title_normalized\": 1, \"title\": 1 }"
+        }
+      },
+      "id": "c1c9ae56-d90c-4e17-8288-57feb7a56bae",
+      "name": "MongoDB Find Existing",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.3,
+      "position": [
+        3488,
+        192
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "mongoDb": {
+          "id": "VhFqxpZVPCdTF4CD",
+          "name": "MongoDB account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const existing = $input.all().map(i => i.json).filter(e => e && e.content_hash);\nconst existingHashes = new Set(existing.map(e => e.content_hash));\nconst existingUrls = new Set(existing.map(e => String(e.url || '').toLowerCase()));\nconst candidates = $('Add Hash').all().map(i => i.json);\nconst seen = new Set();\nconst out = [];\ncandidates.forEach(c => {\n  if (existingHashes.has(c.content_hash)) return;\n  if (existingUrls.has(String(c.url || '').toLowerCase())) return;\n  if (seen.has(c.content_hash)) return;\n  seen.add(c.content_hash);\n  out.push({ json: c });\n});\nreturn out;"
+      },
+      "id": "874a85a8-db72-4ad8-91af-0b37fe99416f",
+      "name": "Hash Dedup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3712,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/embeddings",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"model\": \"text-embedding-3-small\", \"input\": {{ JSON.stringify(((($json.title||\"\") + \" \" + ($json.summary||\"\")).slice(0,2000)) || \"empty\") }} }",
+        "options": {}
+      },
+      "id": "d2d7e148-5c13-40c9-8c49-8622421b1b0f",
+      "name": "OpenAI Embedding",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        4608,
+        192
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "ADk9oW93Uw0qrC7M",
+          "name": "OpenAI account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function cos(a,b){ if(!a||!b||!a.length||a.length!==b.length) return 0; let d=0,na=0,nb=0; for(let i=0;i<a.length;i++){ d+=a[i]*b[i]; na+=a[i]*a[i]; nb+=b[i]*b[i]; } if(!na||!nb) return 0; return d/(Math.sqrt(na)*Math.sqrt(nb)); }\nconst cands = $('Hash Dedup').all().map(i => i.json);\nconst resp = $input.all();\nconst items = cands.map((c, i) => {\n  const r = resp[i] && resp[i].json ? resp[i].json : {};\n  const e = r.data && r.data[0] ? r.data[0].embedding : null;\n  return Object.assign({}, c, { embedding: Array.isArray(e) ? e : null });\n});\nconst existing = $('MongoDB Find Existing').all().map(i => i.json).filter(e => e && Array.isArray(e.embedding));\nconst TH = 0.9;\nconst kept = [];\nitems.forEach(it => {\n  it.dedup_group_id = it.content_hash;\n  if (!it.embedding) { kept.push(it); return; }\n  let dup = false;\n  for (const e of existing) { if (cos(it.embedding, e.embedding) >= TH) { dup = true; it.dedup_group_id = e.dedup_group_id || e.content_hash; break; } }\n  if (dup) return;\n  for (const k of kept) { if (Array.isArray(k.embedding) && cos(it.embedding, k.embedding) >= TH) { dup = true; it.dedup_group_id = k.dedup_group_id; break; } }\n  if (dup) return;\n  kept.push(it);\n});\nreturn kept.map(k => ({ json: k }));"
+      },
+      "id": "8f893311-6b2c-45eb-901f-da2a0e4382f2",
+      "name": "AI Semantic Dedup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4832,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $json;\nconst now = new Date().toISOString();\nreturn { json: {\n  source_id: j.source_id || '',\n  source_name: j.source_name || '',\n  source_type: j.source_type || '',\n  title: j.title || '',\n  title_normalized: j.title_normalized || '',\n  url: j.url || '',\n  content: j.content || '',\n  summary: j.summary || '',\n  published_at: j.published_at || j.fetched_at || now,\n  fetched_at: j.fetched_at || now,\n  content_hash: j.content_hash || '',\n  embedding: j.embedding || null,\n  category: j.category || 'General',\n  severity: j.severity || 'INFO',\n  tags: j.tags || [],\n  dedup_group_id: j.dedup_group_id || j.content_hash || '',\n  classification_reasoning: j.classification_reasoning || ''\n} };"
+      },
+      "id": "afe34031-2511-49bd-b300-449fd6b09596",
+      "name": "Build Documents",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5056,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "aviation_news",
+        "fields": "source_id,source_name,source_type,title,title_normalized,url,content,summary,published_at,fetched_at,content_hash,embedding,category,severity,tags,dedup_group_id,classification_reasoning",
+        "options": {
+          "dateFields": "published_at,fetched_at"
+        }
+      },
+      "id": "077be3bc-1590-4776-a944-24a8ab08585a",
+      "name": "MongoDB Insert",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.3,
+      "position": [
+        5280,
+        192
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "VhFqxpZVPCdTF4CD",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ================================================================\n// ✏️  KATEGORİZASYON PROMPT'U — istediğin zaman buradan düzenle\n// ================================================================\n\nconst CATEGORIES = [\n  'Airworthiness Directive',  // FAA/EASA/CASA tarafından yayımlanan zorunlu direktif\n  'Accident Report',          // Ölümlü kaza, hull loss, resmi kaza soruşturması\n  'Incident Report',          // Yaralanmasız olay, near-miss, pist ihlali\n  'Safety Alert',             // SAFO, InFO, acil güvenlik bildirimi\n  'Safety Bulletin',          // Zorunlu olmayan güvenlik tavsiyesi\n  'Regulatory Update',        // Yeni yönetmelik, kural değişikliği\n  'Technical Notice',         // Bakım, servis bülteni (AD dışı)\n  'Industry News',            // Genel havacılık haberi, finansal, operasyonel\n  'General'                   // Hiçbirine uymayan\n];\n\nconst SEVERITY_GUIDE = `\nCRITICAL : Ölümlü kaza, hull loss, çok sayıda kayıp onaylandı\nHIGH     : Airworthiness directive, serious incident, uçuşta motor yangını, acil tahliye\nMEDIUM   : Potansiyel yaralanma riski olan olay, ihtiyati iniş, safety bulletin\nLOW      : Tavsiye niteliğinde, yaralanmasız, bilgilendirme amaçlı\nINFO     : Genel haber, sektör güncellemesi, güvenlikle doğrudan ilgisiz\n`;\n\nconst AVAILABLE_TAGS = [\n  // Üreticiler\n  'Airbus','Boeing','Embraer','ATR','Bombardier','Cessna','Piper',\n  // Uçak tipleri (sık)\n  'A320','A330','A350','A380','B737','B737 MAX','B777','B787',\n  // Sistem/arıza\n  'Engine Failure','Landing Gear','Fire','Bird Strike','Runway Excursion',\n  'TCAS/ACAS','Weather','ATC','Fuel','Structural','Electrical','Hydraulics',\n  'Pressurization','Windshield','Flaps/Slats',\n  // Faz\n  'Go-Around','CFIT','Loss of Control','Tail Strike','Hard Landing',\n  // Kurum\n  'FAA','EASA','ICAO','NTSB','AAIB','BEA','ATSB','TSB','TAIC'\n];\n\nconst SYSTEM_PROMPT = \\`Sen uzman bir havacılık güvenliği analistisi ve içerik sınıflandırıcısısın.\n\nSana bir havacılık haberi/güvenlik öğesinin başlığı ve özeti verilecek.\nAşağıdaki kurallara göre JSON formatında sınıflandırma yapacaksın.\n\nKATEGORİLER (tam olarak birini seç):\n\\${CATEGORIES.map((c,i) => \\`\\${i+1}. \\${c}\\`).join('\\n')}\n\nCİDDİYET (tam olarak birini seç):\n\\${SEVERITY_GUIDE}\n\nETİKETLER: Listeden 1-5 etiket seç. Listede yoksa spesifik uçak tipini ekleyebilirsin (ör. \"A320neo\").\n\nSADECE aşağıdaki JSON formatını döndür (markdown yok, açıklama yok):\n{\n  \"category\": \"...\",\n  \"severity\": \"...\",\n  \"tags\": [\"...\", \"...\"],\n  \"reasoning\": \"tek cümle Türkçe açıklama\"\n}\\`;\n\nconst j = $json;\nconst userContent = \\`Başlık: \\${j.title || '(başlık yok)'}\nÖzet: \\${(j.summary || j.content || '').slice(0, 1000)}\nKaynak: \\${j.source_name || 'Bilinmiyor'}\nMevcut kategori: \\${j.category || 'belirlenmedi'}\\`;\n\nreturn { json: { ...j, _prompt_system: SYSTEM_PROMPT, _prompt_user: userContent } };"
+      },
+      "id": "bb000001-0000-0000-0000-000000000001",
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3936,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"model\": \"gpt-4.1-nano\", \"messages\": [{\"role\": \"system\", \"content\": {{ JSON.stringify($json._prompt_system) }}},{\"role\": \"user\", \"content\": {{ JSON.stringify($json._prompt_user) }}}], \"response_format\": {\"type\": \"json_object\"}, \"temperature\": 0, \"max_tokens\": 250 } }",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "bb000002-0000-0000-0000-000000000002",
+      "name": "OpenAI Classify",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        4160,
+        192
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "ADk9oW93Uw0qrC7M",
+          "name": "OpenAI account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let orig = {};\ntry { orig = $('Build Prompt').item.json || {}; } catch(e) { orig = {}; }\n\nconst resp = $json;\nlet cls = { category: orig.category || 'General', severity: 'INFO', tags: orig.tags || [], reasoning: '' };\n\ntry {\n  const raw = resp.choices && resp.choices[0] ? resp.choices[0].message.content : '{}';\n  const parsed = JSON.parse(raw);\n  if (parsed.category) cls.category = parsed.category;\n  if (parsed.severity) cls.severity = parsed.severity;\n  if (Array.isArray(parsed.tags) && parsed.tags.length) cls.tags = parsed.tags;\n  if (parsed.reasoning) cls.reasoning = parsed.reasoning;\n} catch(e) {\n  // GPT parse hatası — mevcut değerleri koru\n}\n\n// _prompt_ alanlarını temizle\nconst { _prompt_system, _prompt_user, ...cleanOrig } = orig;\n\nreturn { json: {\n  ...cleanOrig,\n  category: cls.category,\n  severity: cls.severity,\n  tags: cls.tags,\n  classification_reasoning: cls.reasoning\n} };"
+      },
+      "id": "bb000003-0000-0000-0000-000000000003",
+      "name": "Apply Classification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4384,
+        192
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every 6h": {
+      "main": [
+        [
+          {
+            "node": "Load Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Sources": {
+      "main": [
+        [
+          {
+            "node": "Route By Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Manually": {
+      "main": [
+        [
+          {
+            "node": "Load Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route By Type": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Normalize RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize RSS": {
+      "main": [
+        [
+          {
+            "node": "Merge Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP JSON": {
+      "main": [
+        [
+          {
+            "node": "Normalize JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize JSON": {
+      "main": [
+        [
+          {
+            "node": "Merge Sources",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "HTTP HTML": {
+      "main": [
+        [
+          {
+            "node": "Extract Links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Links": {
+      "main": [
+        [
+          {
+            "node": "Pick Subpages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Subpages": {
+      "main": [
+        [
+          {
+            "node": "HTTP Subpage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Subpage": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Content": {
+      "main": [
+        [
+          {
+            "node": "Prep Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Text": {
+      "main": [
+        [
+          {
+            "node": "Classify Subpage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Subpage": {
+      "main": [
+        [
+          {
+            "node": "Filter Relevant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Classify Subpage",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Relevant": {
+      "main": [
+        [
+          {
+            "node": "Normalize HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize HTML": {
+      "main": [
+        [
+          {
+            "node": "Merge Sources",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge Sources": {
+      "main": [
+        [
+          {
+            "node": "Filter Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Valid": {
+      "main": [
+        [
+          {
+            "node": "Add Hash",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Hash": {
+      "main": [
+        [
+          {
+            "node": "MongoDB Find Existing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB Find Existing": {
+      "main": [
+        [
+          {
+            "node": "Hash Dedup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hash Dedup": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embedding": {
+      "main": [
+        [
+          {
+            "node": "AI Semantic Dedup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Semantic Dedup": {
+      "main": [
+        [
+          {
+            "node": "Build Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Documents": {
+      "main": [
+        [
+          {
+            "node": "MongoDB Insert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prompt": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Classify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Classify": {
+      "main": [
+        [
+          {
+            "node": "Apply Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Classification": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "03c83e48-90e6-4639-a3ac-ed64c4971f7e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9deb521ce4255926f3759de68b76f005802ef41e8cdc333213f1fbdd31bf86f8"
+  },
+  "nodeGroups": [],
+  "id": "2TGek5oeNtvNErC8",
+  "tags": []
+}
