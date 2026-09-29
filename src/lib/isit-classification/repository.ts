@@ -5,7 +5,7 @@ import { dbConnect } from "@/lib/mongodb";
 import { IsitClassificationModel, IsitReviewEventModel, IsitSuggestionModel } from "./model";
 import type { PreprocessPlan } from "./preprocess";
 import { decideScope } from "./scope";
-import type { IsitClassification, IsitWorkflowStatus } from "./types";
+import type { IsitClassification, IsitSuggestion, IsitWorkflowStatus } from "./types";
 
 function serialize(doc: IsitClassification): IsitClassification {
   return { ...doc, _id: String(doc._id), news_id: String(doc.news_id) };
@@ -149,4 +149,103 @@ export async function applyPreprocess(writes: PreprocessWrite[]): Promise<number
     { ordered: false, timestamps: false }
   );
   return result.modifiedCount;
+}
+
+/** Identifies an AI configuration: the same input with the same key is never sent twice. */
+export interface RunKey {
+  input_fingerprint: string;
+  taxonomy_version: string;
+  model: string;
+  prompt_version: string;
+}
+
+export interface RunHistory {
+  succeeded: boolean;
+  failedAttempts: number;
+}
+
+/** Per news id: has this exact input already been classified with this configuration, and how often did it fail? */
+export async function findRunHistory(
+  items: Array<{ newsId: string; fingerprint: string }>,
+  key: Omit<RunKey, "input_fingerprint">
+): Promise<Map<string, RunHistory>> {
+  await dbConnect();
+  const rows = await IsitSuggestionModel.aggregate<{ _id: { news_id: Types.ObjectId; fp: string; status: string }; n: number }>([
+    {
+      $match: {
+        news_id: { $in: items.map((item) => new Types.ObjectId(item.newsId)) },
+        taxonomy_version: key.taxonomy_version,
+        model: key.model,
+        prompt_version: key.prompt_version,
+      },
+    },
+    { $group: { _id: { news_id: "$news_id", fp: "$input_fingerprint", status: "$status" }, n: { $sum: 1 } } },
+  ]);
+
+  const fingerprintOf = new Map(items.map((item) => [item.newsId, item.fingerprint]));
+  const history = new Map<string, RunHistory>(items.map((item) => [item.newsId, { succeeded: false, failedAttempts: 0 }]));
+  for (const row of rows) {
+    const id = String(row._id.news_id);
+    if (row._id.fp !== fingerprintOf.get(id)) continue;
+    const entry = history.get(id)!;
+    if (row._id.status === "succeeded") entry.succeeded = true;
+    else entry.failedAttempts += row.n;
+  }
+  return history;
+}
+
+export interface SaveRunInput {
+  newsId: string;
+  suggestion: Omit<IsitSuggestion, "_id" | "news_id" | "created_at">;
+  /** The record is only updated if its input still has this fingerprint. */
+  expectedFingerprint: string;
+  flags: string[];
+  workflowStatus: IsitWorkflowStatus;
+}
+
+/**
+ * Stores the run as an immutable suggestion and points the record at it. Never writes `final`
+ * and never touches an approved record. A failed run keeps the previous `ai` snapshot.
+ */
+export async function saveRun(input: SaveRunInput): Promise<{ suggestionId: string; applied: boolean }> {
+  await dbConnect();
+  const newsId = new Types.ObjectId(input.newsId);
+  const suggestion = await IsitSuggestionModel.create({ ...input.suggestion, news_id: newsId });
+
+  const set: Record<string, unknown> = {
+    flags: input.flags,
+    workflow_status: input.workflowStatus,
+    updated_at: new Date(),
+  };
+  if (input.suggestion.status === "succeeded" && input.suggestion.outcome) {
+    set.ai = {
+      suggestion_id: suggestion._id,
+      outcome: input.suggestion.outcome,
+      codes: input.suggestion.codes,
+      created_at: suggestion.get("created_at"),
+    };
+  }
+
+  const result = await IsitClassificationModel.updateOne(
+    { news_id: newsId, "input.fingerprint": input.expectedFingerprint, workflow_status: { $ne: "approved" } },
+    { $set: set },
+    { timestamps: false }
+  );
+  return { suggestionId: String(suggestion._id), applied: result.modifiedCount === 1 };
+}
+
+/** Records that ran out of retries go to review without another AI call. */
+export async function markForReview(newsId: string, flags: string[]): Promise<void> {
+  await dbConnect();
+  await IsitClassificationModel.updateOne(
+    { news_id: new Types.ObjectId(newsId), workflow_status: { $nin: ["approved", "stale"] } },
+    { $set: { workflow_status: "needs_review", flags, updated_at: new Date() } },
+    { timestamps: false }
+  );
+}
+
+export async function findAllClassifications(): Promise<IsitClassification[]> {
+  await dbConnect();
+  const docs = await IsitClassificationModel.find({}).lean<IsitClassification[]>();
+  return docs.map(serialize);
 }
