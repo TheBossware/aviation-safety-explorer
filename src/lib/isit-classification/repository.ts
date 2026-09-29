@@ -3,6 +3,7 @@ import { Types } from "mongoose";
 import type { AviationNews } from "@/lib/aviation-news/types";
 import { dbConnect } from "@/lib/mongodb";
 import { IsitClassificationModel, IsitReviewEventModel, IsitSuggestionModel } from "./model";
+import type { PreprocessPlan } from "./preprocess";
 import { decideScope } from "./scope";
 import type { IsitClassification, IsitWorkflowStatus } from "./types";
 
@@ -107,4 +108,45 @@ export async function countBySource(): Promise<Record<string, number>> {
     { $group: { _id: "$source_id", n: { $sum: 1 } } },
   ]);
   return Object.fromEntries(rows.map((row) => [row._id, row.n]));
+}
+
+export async function findByNewsIds(newsIds: string[]): Promise<IsitClassification[]> {
+  await dbConnect();
+  const docs = await IsitClassificationModel.find({
+    news_id: { $in: newsIds.map((id) => new Types.ObjectId(id)) },
+  }).lean<IsitClassification[]>();
+  return docs.map(serialize);
+}
+
+export interface PreprocessWrite {
+  newsId: string;
+  /** Fingerprint the plan was computed against; the write is skipped if it moved meanwhile. */
+  expectedFingerprint: string | null;
+  set: PreprocessPlan["set"];
+}
+
+/** Applies preprocessing results. Never touches `ai` or `final`. Returns the number of records written. */
+export async function applyPreprocess(writes: PreprocessWrite[]): Promise<number> {
+  await dbConnect();
+  if (!writes.length) return 0;
+  const now = new Date();
+  const result = await IsitClassificationModel.bulkWrite(
+    writes.map((write) => ({
+      updateOne: {
+        filter: { news_id: new Types.ObjectId(write.newsId), "input.fingerprint": write.expectedFingerprint },
+        update: {
+          $set: {
+            ...write.set,
+            relations: write.set.relations.map((relation) => ({
+              ...relation,
+              news_id: relation.news_id === null ? null : new Types.ObjectId(String(relation.news_id)),
+            })),
+            updated_at: now,
+          },
+        },
+      },
+    })),
+    { ordered: false, timestamps: false }
+  );
+  return result.modifiedCount;
 }
