@@ -1,0 +1,795 @@
+{
+  "meta": {
+    "taxonomy": "IATA Safety Incident Taxonomy (ISIT)",
+    "version": "0.3.12"
+  },
+  "parentLevels": [
+    {
+      "code": "10000000",
+      "level": 1,
+      "name": "Air Traffic Management",
+      "dimension": "event",
+      "eventTypes": [
+        {
+          "code": "10010000",
+          "name": "ATC Service Standard",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 29
+        },
+        {
+          "code": "10020000",
+          "name": "ATM Operations",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 24
+        },
+        {
+          "code": "10030000",
+          "name": "ATM Facility",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 11
+        },
+        {
+          "code": "10040000",
+          "name": "ATM Policy and Procedures",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 5
+        },
+        {
+          "code": "10050000",
+          "name": "ATM Communication, Navigation and Surveillance",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 30
+        }
+      ]
+    },
+    {
+      "code": "20000000",
+      "level": 1,
+      "name": "Airport Management",
+      "dimension": "event",
+      "eventTypes": [
+        {
+          "code": "20010000",
+          "name": "Airport Management/Infrastructure",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 45
+        }
+      ]
+    },
+    {
+      "code": "30000000",
+      "level": 1,
+      "name": "Cabin Safety",
+      "dimension": "event",
+      "eventTypes": [
+        {
+          "code": "30010000",
+          "name": "Unruly Passenger",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 39
+        },
+        {
+          "code": "30020000",
+          "name": "Door/Exit",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 43
+        },
+        {
+          "code": "30030000",
+          "name": "Cabin Management",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 35
+        },
+        {
+          "code": "30040000",
+          "name": "Cabin Emergency Equipment",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 28
+        },
+        {
+          "code": "30050000",
+          "name": "Cabin Safety/Emergency Equipment",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 51
+        },
+        {
+          "code": "30060000",
+          "name": "Cabin Fixed Equipment",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 65
+        },
+        {
+          "code": "30070000",
+          "name": "Cabin Service Equipment",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 27
+        },
+        {
+          "code": "30080000",
+          "name": "Cabin Crew Normal Procedures",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 45
+        },
+        {
+          "code": "30090000",
+          "name": "Non-Normal Procedures and Emergency Procedures",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 7
+        }
+      ]
+    },
+    {
+      "code": "40000000",
+      "level": 1,
+      "name": "Common",
+      "dimension": "context",
+      "eventTypes": [
+        {
+          "code": "40010000",
+          "name": "Phase of Operation",
+          "dimension": "context",
+          "definition": null,
+          "descriptorCount": 40
+        },
+        {
+          "code": "40020000",
+          "name": "Aircraft Damage",
+          "dimension": "context",
+          "definition": null,
+          "descriptorCount": 43
+        },
+        {
+          "code": "40030000",
+          "name": "Source of Aircraft Damage",
+          "dimension": "context",
+          "definition": null,
+          "descriptorCount": 44
+        },
+        {
+          "code": "40040000",
+          "name": "Aircraft Area of Damage",
+          "dimension": "context",
+          "definition": null,
+          "descriptorCount": 63
+        },
+        {
+          "code": "40050000",
+          "name": "Coordination/Communications",
+          "dimension": "contributing",
+          "definition": null,
+          "descriptorCount": 77
+        },
+        {
+          "code": "40060000",
+          "name": "Fatigue",
+          "dimension": "contributing",
+          "definition": null,
+          "descriptorCount": 10
+        },
+        {
+          "code": "40070000",
+          "name": "Corrective Actions",
+          "dimension": "context",
+          "definition": null,
+          "descriptorCount": 16
+        },
+        {
+          "code": "40080000",
+          "name": "Stress",
+          "dimension": "contributing",
+          "definition": null,
+          "descriptorCount": 10
+        },
+        {
+          "code": "40090000",
+          "name": "Operational Impact",
+          "dimension": "context",
+          "definition": null,
+          "descriptorCount": 15
+        }
+      ]
+    },
+    {
+      "code": "50000000",
+      "level": 1,
+      "name": "Why",
+      "dimension": "contributing",
+      "eventTypes": [
+        {
+          "code": "50010000",
+          "name": "Environmental",
+          "dimension": "contributing",
+          "definition": "Environmental factors are factors in a mishap if physical or technological factors affect",
+          "descriptorCount": 54
+        },
+        {
+          "code": "50020000",
+          "name": "Preconditions",
+          "dimension": "contributing",
+          "definition": null,
+          "descriptorCount": 47
+        },
+        {
+          "code": "50030000",
+          "name": "Organizational Influences",
+          "dimension": "contributing",
+          "definition": null,
+          "descriptorCount": 37
+        },
+        {
+          "code": "50040000",
+          "name": "Supervision",
+          "dimension": "contributing",
+          "definition": null,
+          "descriptorCount": 30
+        },
+        {
+          "code": "50050000",
+          "name": "Individual Actions",
+          "dimension": "contributing",
+          "definition": null,
+          "descriptorCount": 19
+        }
+      ]
+    },
+    {
+      "code": "60000000",
+      "level": 1,
+      "name": "Engineering/Maintenance",
+      "dimension": "event",
+      "eventTypes": [
+        {
+          "code": "60010000",
+          "name": "Non-Normal Procedures and Emergency Procedures",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 37
+        },
+        {
+          "code": "60020000",
+          "name": "ATA 12 Servicing",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 11
+        },
+        {
+          "code": "60030000",
+          "name": "ATA 21 Air Conditioning & Pressurisation System",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 22
+        },
+        {
+          "code": "60040000",
+          "name": "ATA 49 Auxiliary Power Unit (APU) - General",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 21
+        },
+        {
+          "code": "60050000",
+          "name": "ATA 22 Auto-Flight",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 26
+        },
+        {
+          "code": "60060000",
+          "name": "ATA 25 Equipment/Furnishings",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 39
+        },
+        {
+          "code": "60070000",
+          "name": "ATA 23 Communications",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 29
+        },
+        {
+          "code": "60080000",
+          "name": "ATA 52 Doors",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 22
+        },
+        {
+          "code": "60090000",
+          "name": "ATA 24 Electrical Power",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 19
+        },
+        {
+          "code": "60100000",
+          "name": "ATA 26 Fire Protection",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 23
+        },
+        {
+          "code": "60110000",
+          "name": "ATA 27 Flight Controls",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 24
+        },
+        {
+          "code": "60120000",
+          "name": "ATA 28 Fuel",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 17
+        },
+        {
+          "code": "60130000",
+          "name": "ATA 29 Hydraulic Power",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 17
+        },
+        {
+          "code": "60140000",
+          "name": "ATA 30 Ice & Rain Protection",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 19
+        },
+        {
+          "code": "60150000",
+          "name": "ATA 31 Instruments",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 24
+        },
+        {
+          "code": "60160000",
+          "name": "ATA 32 Landing Gear",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 29
+        },
+        {
+          "code": "60170000",
+          "name": "ATA 33 Lights",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 15
+        },
+        {
+          "code": "60180000",
+          "name": "ATA 34 Navigation",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 25
+        },
+        {
+          "code": "60190000",
+          "name": "ATA 35 Oxygen",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 13
+        },
+        {
+          "code": "60200000",
+          "name": "ATA 36 Pneumatics",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 13
+        },
+        {
+          "code": "60210000",
+          "name": "ATA 37 Vacuum",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 4
+        },
+        {
+          "code": "60220000",
+          "name": "ATA 44 Cabin System",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 7
+        },
+        {
+          "code": "60230000",
+          "name": "ATA 45 Maintenance System",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 7
+        },
+        {
+          "code": "60240000",
+          "name": "ATA 46 Information Systems",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 7
+        },
+        {
+          "code": "60250000",
+          "name": "ATA 47 Inert Gas System",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 6
+        },
+        {
+          "code": "60260000",
+          "name": "ATA 53 Fuselage",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 9
+        },
+        {
+          "code": "60270000",
+          "name": "ATA 54 Nacelles/Pylons",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 4
+        },
+        {
+          "code": "60280000",
+          "name": "ATA 55 Stabilizers",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 7
+        },
+        {
+          "code": "60290000",
+          "name": "ATA 57 Wings",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 7
+        },
+        {
+          "code": "60300000",
+          "name": "ATA 61 Propellers",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 11
+        },
+        {
+          "code": "60310000",
+          "name": "ATA 71 Powerplant",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 7
+        },
+        {
+          "code": "60320000",
+          "name": "ATA 72 Turbine/Turboprop Engine",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 9
+        },
+        {
+          "code": "60330000",
+          "name": "ATA 73 Engine Fuel and Control",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 5
+        },
+        {
+          "code": "60340000",
+          "name": "ATA 74 Ignition",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 5
+        },
+        {
+          "code": "60350000",
+          "name": "ATA 75 Air",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 6
+        },
+        {
+          "code": "60360000",
+          "name": "ATA 76 Engine Controls",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 6
+        },
+        {
+          "code": "60370000",
+          "name": "7700 Engine Indicating System",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 6
+        },
+        {
+          "code": "60380000",
+          "name": "ATA 78 Engine Exhaust",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 5
+        },
+        {
+          "code": "60390000",
+          "name": "ATA 79 Engine Oil",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 5
+        },
+        {
+          "code": "60400000",
+          "name": "ATA 80 Starting",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 5
+        },
+        {
+          "code": "60410000",
+          "name": "ATA 81 Turbocharging",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 2
+        },
+        {
+          "code": "60420000",
+          "name": "ATA 82 Water Injection",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 2
+        },
+        {
+          "code": "60430000",
+          "name": "ATA 83 Accessory Gearboxed",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 2
+        },
+        {
+          "code": "60440000",
+          "name": "ATA 71 - 85 Engine",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 30
+        },
+        {
+          "code": "60450000",
+          "name": "ATA 38 Water/Waste",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 13
+        },
+        {
+          "code": "60460000",
+          "name": "ATA 56 Windows",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 14
+        },
+        {
+          "code": "60470000",
+          "name": "Aircraft Technical",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 27
+        },
+        {
+          "code": "60480000",
+          "name": "Maintenance Program Management",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 115
+        },
+        {
+          "code": "60490000",
+          "name": "Maintenance Program Management - Organization",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 26
+        }
+      ]
+    },
+    {
+      "code": "70000000",
+      "level": 1,
+      "name": "Flight Operations",
+      "dimension": "event",
+      "eventTypes": [
+        {
+          "code": "70010000",
+          "name": "Flight Path Management",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 167
+        },
+        {
+          "code": "70020000",
+          "name": "Aircraft Library",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 28
+        },
+        {
+          "code": "70030000",
+          "name": "Flight Management and Procedures",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 51
+        },
+        {
+          "code": "70040000",
+          "name": "Flight Planning and Preparation",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 20
+        },
+        {
+          "code": "70050000",
+          "name": "Non-Normal Procedures and Emergency Procedures",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 20
+        },
+        {
+          "code": "70060000",
+          "name": "External Influence - Traffic",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 37
+        },
+        {
+          "code": "70070000",
+          "name": "External Influence - Other Airborne",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 24
+        },
+        {
+          "code": "70080000",
+          "name": "Regulatory Oversight",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 16
+        }
+      ]
+    },
+    {
+      "code": "80000000",
+      "level": 1,
+      "name": "Ground",
+      "dimension": "event",
+      "eventTypes": [
+        {
+          "code": "80010000",
+          "name": "Passenger Handling",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 34
+        },
+        {
+          "code": "80020000",
+          "name": "Ramp Handling",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 82
+        },
+        {
+          "code": "80030000",
+          "name": "Load Control",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 15
+        },
+        {
+          "code": "80040000",
+          "name": "Warehouse and Special Cargo",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 59
+        },
+        {
+          "code": "80050000",
+          "name": "Dangerous Goods Carried by Passenger and Crew",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 13
+        },
+        {
+          "code": "80060000",
+          "name": "Baggage Handling",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 6
+        },
+        {
+          "code": "80070000",
+          "name": "Aircraft Ground Movement",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 4
+        }
+      ]
+    },
+    {
+      "code": "90000000",
+      "level": 1,
+      "name": "Occupational Health and Safety",
+      "dimension": "event",
+      "eventTypes": [
+        {
+          "code": "90010000",
+          "name": "Incapacitation",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 6
+        },
+        {
+          "code": "90020000",
+          "name": "Injury",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 120
+        },
+        {
+          "code": "90030000",
+          "name": "Illness",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 54
+        }
+      ]
+    },
+    {
+      "code": "100000000",
+      "level": 1,
+      "name": "Security",
+      "dimension": "event",
+      "eventTypes": [
+        {
+          "code": "100010000",
+          "name": "Threat/Interference",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 29
+        },
+        {
+          "code": "100020000",
+          "name": "Access Control",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 12
+        },
+        {
+          "code": "100030000",
+          "name": "Safeguarding and screening",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 40
+        },
+        {
+          "code": "100040000",
+          "name": "Unauthorised Weapons",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 3
+        },
+        {
+          "code": "100050000",
+          "name": "Criminal Acts",
+          "dimension": "event",
+          "definition": null,
+          "descriptorCount": 17
+        }
+      ]
+    }
+  ]
+}
