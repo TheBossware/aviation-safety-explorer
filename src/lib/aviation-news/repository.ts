@@ -29,6 +29,8 @@ export interface AviationNewsFilter {
   aircraft?: string;
   /** Matches within `tags`. */
   tag?: string;
+  /** Order by `published_at`; defaults to `desc` (newest first). */
+  sort?: "asc" | "desc";
   page?: number;
   pageSize?: number;
 }
@@ -68,9 +70,11 @@ export async function findFiltered(filter: AviationNewsFilter): Promise<Aviation
   const page = filter.page && filter.page > 0 ? filter.page : 1;
   const pageSize = filter.pageSize && filter.pageSize > 0 ? filter.pageSize : DEFAULT_PAGE_SIZE;
 
+  const sortDirection = filter.sort === "asc" ? 1 : -1;
+
   const [docs, total] = await Promise.all([
     AviationNewsModel.find(query)
-      .sort({ published_at: -1 })
+      .sort({ published_at: sortDirection })
       .skip((page - 1) * pageSize)
       .limit(pageSize)
       .lean<AviationNews[]>(),

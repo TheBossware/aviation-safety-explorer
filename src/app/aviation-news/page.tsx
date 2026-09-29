@@ -24,6 +24,10 @@ function toSeverityFilter(value: string | string[] | undefined): Severity[] {
   return toArray(value).filter((v): v is Severity => (SEVERITY_VALUES as string[]).includes(v));
 }
 
+function toSortOrder(value: string | undefined): "asc" | "desc" {
+  return value === "asc" ? "asc" : "desc";
+}
+
 function publishedAfterFromRange(range: string | undefined): Date | undefined {
   if (!range) return undefined;
   const from = new Date();
@@ -59,6 +63,7 @@ export default async function AviationNewsPage({ searchParams }: PageProps) {
     q: toSingle(params.q),
     aircraft: toSingle(params.aircraft),
     tag: toSingle(params.tag),
+    sort: toSortOrder(toSingle(params.sort)),
     page: Number(toSingle(params.page)) || 1,
   };
 

@@ -22,6 +22,11 @@ const DATE_RANGES = [
   { value: "All", label: "All time" },
 ];
 
+const SORT_OPTIONS = [
+  { value: "desc", label: "Newest first" },
+  { value: "asc", label: "Oldest first" },
+];
+
 interface FilterToolbarProps {
   categories: string[];
   sources: Source[];
@@ -99,6 +104,22 @@ export function FilterToolbar({ categories, sources, searchParams }: FilterToolb
           {DATE_RANGES.map((range) => (
             <SelectItem key={range.value} value={range.value}>
               {range.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={toSingle(searchParams.sort) ?? "desc"}
+        onValueChange={(v) => navigate("sort", v)}
+      >
+        <SelectTrigger className="h-9 w-[156px]">
+          <SelectValue placeholder="Newest first" />
+        </SelectTrigger>
+        <SelectContent>
+          {SORT_OPTIONS.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
             </SelectItem>
           ))}
         </SelectContent>

@@ -28,6 +28,11 @@ const DATE_RANGES = [
   { value: "All", label: "All time" },
 ];
 
+const SORT_OPTIONS = [
+  { value: "desc", label: "Newest first" },
+  { value: "asc", label: "Oldest first" },
+];
+
 interface FilterFormProps {
   /** Distinguishes ids between the desktop aside and mobile sheet instances. */
   idPrefix: string;
@@ -143,6 +148,22 @@ export function FilterForm({
             {DATE_RANGES.map((range) => (
               <SelectItem key={range.value} value={range.value}>
                 {range.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`${idPrefix}-sort`}>Sort by Published Date</Label>
+        <Select name="sort" defaultValue={toSingle(searchParams.sort) ?? "desc"}>
+          <SelectTrigger id={`${idPrefix}-sort`} className="w-full">
+            <SelectValue placeholder="Newest first" />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
               </SelectItem>
             ))}
           </SelectContent>
