@@ -99,6 +99,15 @@ export async function findById(id: string): Promise<AviationNews | null> {
   return doc ? serialize(doc) : null;
 }
 
+/** Every item of one source, oldest first, unpaginated: for batch jobs, not for pages. */
+export async function findAllBySource(sourceId: string): Promise<AviationNews[]> {
+  await dbConnect();
+  const docs = await AviationNewsModel.find({ source_id: sourceId })
+    .sort({ published_at: 1 })
+    .lean<AviationNews[]>();
+  return docs.map(serialize);
+}
+
 export async function distinctCategories(): Promise<string[]> {
   await dbConnect();
   const categories = await AviationNewsModel.distinct("category");
