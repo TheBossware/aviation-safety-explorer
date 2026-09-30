@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle, ClipboardCheck, Newspaper, Rss, Siren } from "lucide-react";
 
-import { getDashboardData } from "@/lib/dashboard-data";
+import { getDashboardData } from "@/lib/dashboard/dashboard";
 import {
   ISIT_OUTCOME_VALUES,
   ISIT_WORKFLOW_STATUS_VALUES,
