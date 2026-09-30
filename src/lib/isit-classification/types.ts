@@ -73,7 +73,7 @@ export const ISIT_RELATION_TYPE_VALUES: readonly IsitRelationType[] = [
 /** A link to another news record. Suggested by the pipeline, never acted on until `confirmed`. */
 export interface IsitRelation {
   type: IsitRelationType;
-  news_id: ObjectId | string | null;
+  news_id: string | null;
   /** AvHerald article id when the related record is not (yet) in `aviation_news`. */
   article_id: string | null;
   confirmed: boolean;
@@ -111,7 +111,7 @@ export interface IsitDates {
 }
 
 export interface IsitAiSnapshot {
-  suggestion_id: ObjectId | string;
+  suggestion_id: string;
   outcome: IsitOutcome;
   codes: IsitCodeAssignment[];
   created_at: Date | string;
@@ -127,9 +127,13 @@ export interface IsitFinal {
   note: string | null;
 }
 
+/**
+ * An ISIT record as the app sees it: ids are strings (the repository converts them). What MongoDB
+ * stores is `IsitClassificationDocument` in model.ts.
+ */
 export interface IsitClassification {
-  _id: ObjectId | string;
-  news_id: ObjectId | string;
+  _id: string;
+  news_id: string;
   source_id: string;
   /** AvHerald article id from `url` (`h?article=<hex>`). Shared by revocations and the post they revoke. */
   article_id: string | null;
@@ -148,10 +152,13 @@ export interface IsitClassification {
 
 export type IsitSuggestionStatus = "succeeded" | "failed";
 
-/** One immutable AI run. */
+/**
+ * One immutable AI run, returned as stored (ObjectIds): it stays on the server, and `_id` is written
+ * back as a reference (`stages.revalidated_from`).
+ */
 export interface IsitSuggestion {
-  _id: ObjectId | string;
-  news_id: ObjectId | string;
+  _id: ObjectId;
+  news_id: ObjectId;
   status: IsitSuggestionStatus;
   input_fingerprint: string;
   taxonomy_version: string;
@@ -196,15 +203,15 @@ export const ISIT_REVIEW_ACTION_VALUES: readonly IsitReviewAction[] = [
   "comment",
 ];
 
-/** Append-only review history. */
+/** Append-only review history, with string ids (stored as `IsitReviewEventDocument`). */
 export interface IsitReviewEvent {
-  _id: ObjectId | string;
-  news_id: ObjectId | string;
+  _id: string;
+  news_id: string;
   action: IsitReviewAction;
   actor: string;
   before: unknown;
   after: unknown;
   comment: string | null;
-  suggestion_id: ObjectId | string | null;
+  suggestion_id: string | null;
   at: Date | string;
 }

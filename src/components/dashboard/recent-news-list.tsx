@@ -11,7 +11,7 @@ export function RecentNewsList({ items, emptyMessage }: { items: AviationNews[];
   return (
     <ul className="flex flex-col divide-y divide-border">
       {items.map((item) => (
-        <li key={String(item._id)} className="flex items-start justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
+        <li key={item._id} className="flex items-start justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
           <Link href={`/aviation-news/${item._id}`} className="flex min-w-0 flex-col gap-0.5 hover:underline">
             <span className="line-clamp-2 text-sm font-medium">{item.title}</span>
             <span className="text-xs text-muted-foreground">

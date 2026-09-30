@@ -1,5 +1,5 @@
 import { dbConnect } from "@/lib/mongodb";
-import { SourceModel } from "./model";
+import { SourceModel, type SourceDocument } from "./model";
 import type { CreateSourceInput, Source, UpdateSourceInput } from "./types";
 
 /**
@@ -8,33 +8,33 @@ import type { CreateSourceInput, Source, UpdateSourceInput } from "./types";
  * JSON-serializable values are allowed). Normalize it to a string here so
  * every caller gets a plain `Source`.
  */
-function serialize(doc: Source): Source {
+function serialize(doc: SourceDocument): Source {
   return { ...doc, _id: String(doc._id) };
 }
 
 /** Every source, active or not, by name. */
 export async function findAll(): Promise<Source[]> {
   await dbConnect();
-  const docs = await SourceModel.find({}).sort({ name: 1 }).lean<Source[]>();
+  const docs = await SourceModel.find({}).sort({ name: 1 }).lean<SourceDocument[]>();
   return docs.map(serialize);
 }
 
 /** Sources n8n currently polls, by name. */
 export async function findActive(): Promise<Source[]> {
   await dbConnect();
-  const docs = await SourceModel.find({ active: true }).sort({ name: 1 }).lean<Source[]>();
+  const docs = await SourceModel.find({ active: true }).sort({ name: 1 }).lean<SourceDocument[]>();
   return docs.map(serialize);
 }
 
 export async function create(input: CreateSourceInput): Promise<Source> {
   await dbConnect();
   const doc = await SourceModel.create(input);
-  return serialize(doc.toObject() as Source);
+  return serialize(doc.toObject());
 }
 
 export async function update(id: string, input: UpdateSourceInput): Promise<Source | null> {
   await dbConnect();
-  const doc = await SourceModel.findByIdAndUpdate(id, input, { new: true }).lean<Source>();
+  const doc = await SourceModel.findByIdAndUpdate(id, input, { new: true }).lean<SourceDocument>();
   return doc ? serialize(doc) : null;
 }
 

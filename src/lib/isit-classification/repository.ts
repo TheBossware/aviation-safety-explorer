@@ -3,7 +3,13 @@ import { Types } from "mongoose";
 import { AVIATION_NEWS_COLLECTION } from "@/lib/aviation-news/model";
 import type { AviationNews } from "@/lib/aviation-news/types";
 import { dbConnect } from "@/lib/mongodb";
-import { IsitClassificationModel, IsitReviewEventModel, IsitSuggestionModel } from "./model";
+import {
+  IsitClassificationModel,
+  IsitReviewEventModel,
+  IsitSuggestionModel,
+  type IsitClassificationDocument,
+  type IsitReviewEventDocument,
+} from "./model";
 import { INPUT_CHANGED_FLAG, type PreprocessPlan } from "./preprocess";
 import type { ReviewEventDraft } from "./review";
 import { decideScope } from "./scope";
@@ -16,8 +22,35 @@ import type {
   IsitWorkflowStatus,
 } from "./types";
 
-function serialize(doc: IsitClassification): IsitClassification {
-  return { ...doc, _id: String(doc._id), news_id: String(doc.news_id) };
+/*
+ * Stored documents use ObjectIds; the app gets plain string ids (React Server Components can't pass
+ * ObjectId instances to Client Components, and strings compare with ===). Writes convert back.
+ */
+
+function serializeAi(ai: IsitClassificationDocument["ai"]): IsitClassification["ai"] {
+  return ai ? { ...ai, suggestion_id: String(ai.suggestion_id) } : null;
+}
+
+function serialize(doc: IsitClassificationDocument): IsitClassification {
+  return {
+    ...doc,
+    _id: String(doc._id),
+    news_id: String(doc.news_id),
+    relations: doc.relations.map((relation) => ({
+      ...relation,
+      news_id: relation.news_id === null ? null : String(relation.news_id),
+    })),
+    ai: serializeAi(doc.ai),
+  };
+}
+
+function serializeEvent(doc: IsitReviewEventDocument): IsitReviewEvent {
+  return {
+    ...doc,
+    _id: String(doc._id),
+    news_id: String(doc.news_id),
+    suggestion_id: doc.suggestion_id === null ? null : String(doc.suggestion_id),
+  };
 }
 
 /** Creates the ISIT collections and their indexes. Idempotent; the only place they get created. */
@@ -51,7 +84,7 @@ export async function ensurePending(news: AviationNews[]): Promise<EnsurePending
     if (!scope.inScope) {
       throw new Error(`News ${item._id} is outside the ISIT scope: ${scope.reason}`);
     }
-    const newsId = new Types.ObjectId(String(item._id));
+    const newsId = new Types.ObjectId(item._id);
     return {
       updateOne: {
         filter: { news_id: newsId },
@@ -96,13 +129,13 @@ export async function findExistingNewsIds(newsIds: string[]): Promise<Set<string
     news_id: { $in: newsIds.map((id) => new Types.ObjectId(id)) },
   })
     .select({ news_id: 1 })
-    .lean<Pick<IsitClassification, "news_id">[]>();
+    .lean<Pick<IsitClassificationDocument, "news_id">[]>();
   return new Set(docs.map((doc) => String(doc.news_id)));
 }
 
 export async function findByNewsId(newsId: string): Promise<IsitClassification | null> {
   await dbConnect();
-  const doc = await IsitClassificationModel.findOne({ news_id: new Types.ObjectId(newsId) }).lean<IsitClassification>();
+  const doc = await IsitClassificationModel.findOne({ news_id: new Types.ObjectId(newsId) }).lean<IsitClassificationDocument>();
   return doc ? serialize(doc) : null;
 }
 
@@ -118,7 +151,7 @@ export async function findByNewsIds(newsIds: string[]): Promise<IsitClassificati
   await dbConnect();
   const docs = await IsitClassificationModel.find({
     news_id: { $in: newsIds.map((id) => new Types.ObjectId(id)) },
-  }).lean<IsitClassification[]>();
+  }).lean<IsitClassificationDocument[]>();
   return docs.map(serialize);
 }
 
@@ -143,7 +176,7 @@ export async function applyPreprocess(writes: PreprocessWrite[]): Promise<number
             ...write.set,
             relations: write.set.relations.map((relation) => ({
               ...relation,
-              news_id: relation.news_id === null ? null : new Types.ObjectId(String(relation.news_id)),
+              news_id: relation.news_id === null ? null : new Types.ObjectId(relation.news_id),
             })),
             updated_at: now,
           },
@@ -250,7 +283,7 @@ export async function markForReview(newsId: string, flags: string[]): Promise<vo
 
 export async function findAllClassifications(): Promise<IsitClassification[]> {
   await dbConnect();
-  const docs = await IsitClassificationModel.find({}).lean<IsitClassification[]>();
+  const docs = await IsitClassificationModel.find({}).lean<IsitClassificationDocument[]>();
   return docs.map(serialize);
 }
 
@@ -259,9 +292,10 @@ export type DashboardClassification = Pick<IsitClassification, "workflow_status"
 /** Every record with only what the dashboard aggregates (no input snapshot). */
 export async function findForDashboard(): Promise<DashboardClassification[]> {
   await dbConnect();
-  return IsitClassificationModel.find({}, { _id: 0, workflow_status: 1, flags: 1, ai: 1, final: 1 }).lean<
-    DashboardClassification[]
+  const docs = await IsitClassificationModel.find({}, { _id: 0, workflow_status: 1, flags: 1, ai: 1, final: 1 }).lean<
+    Pick<IsitClassificationDocument, "workflow_status" | "flags" | "ai" | "final">[]
   >();
+  return docs.map((doc) => ({ ...doc, ai: serializeAi(doc.ai) }));
 }
 
 export interface ReviewListRow {
@@ -282,8 +316,8 @@ export async function findForReview(filter: { status?: IsitWorkflowStatus } = {}
     news_id: Types.ObjectId;
     workflow_status: IsitWorkflowStatus;
     flags: string[];
-    ai: IsitClassification["ai"];
-    final: IsitClassification["final"];
+    ai: IsitClassificationDocument["ai"];
+    final: IsitClassificationDocument["final"];
     news: Array<{ title: string; published_at: Date | null }>;
   }>([
     { $match: filter.status ? { workflow_status: filter.status } : {} },
@@ -310,9 +344,10 @@ export async function findSuggestionById(id: string): Promise<IsitSuggestion | n
 
 export async function findReviewEvents(newsId: string): Promise<IsitReviewEvent[]> {
   await dbConnect();
-  return IsitReviewEventModel.find({ news_id: new Types.ObjectId(newsId) })
+  const docs = await IsitReviewEventModel.find({ news_id: new Types.ObjectId(newsId) })
     .sort({ at: -1 })
-    .lean<IsitReviewEvent[]>();
+    .lean<IsitReviewEventDocument[]>();
+  return docs.map(serializeEvent);
 }
 
 /**
@@ -322,7 +357,7 @@ export async function findReviewEvents(newsId: string): Promise<IsitReviewEvent[
 export async function saveReview(newsId: string, final: IsitFinal, events: ReviewEventDraft[]): Promise<boolean> {
   await dbConnect();
   const id = new Types.ObjectId(newsId);
-  const toObjectId = (value: unknown) => (value ? new Types.ObjectId(String(value)) : null);
+  const toObjectId = (value: string | null) => (value ? new Types.ObjectId(value) : null);
   const now = new Date();
 
   const result = await IsitClassificationModel.updateOne(

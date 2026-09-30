@@ -23,7 +23,7 @@ const VALIDATION_FLAGS = new Set(["code_dropped", "low_confidence"]);
 async function main() {
   const write = process.argv.includes("--write");
   const taxonomy = loadIsitTaxonomy();
-  const newsById = new Map((await findAllBySource(ISIT_SOURCE_ID)).map((item) => [String(item._id), item]));
+  const newsById = new Map((await findAllBySource(ISIT_SOURCE_ID)).map((item) => [item._id, item]));
 
   let checked = 0;
   let unchanged = 0;
@@ -32,9 +32,9 @@ async function main() {
 
   for (const record of await findAllClassifications()) {
     if (!record.ai) continue;
-    const suggestion = await findSuggestionById(String(record.ai.suggestion_id));
+    const suggestion = await findSuggestionById(record.ai.suggestion_id);
     const stages = readStages(suggestion);
-    const news = newsById.get(String(record.news_id));
+    const news = newsById.get(record.news_id);
     if (!suggestion || !stages.route || !stages.select || !news) continue; // no code selection to re-check
     if (suggestion.pipeline_version === PIPELINE_VERSION) continue;
     if (suggestion.input_fingerprint !== record.input.fingerprint) {
@@ -71,7 +71,7 @@ async function main() {
     const result = { status: "succeeded", outcome: selected.outcome } as const;
     const flags = mergeFlags(record.flags, aiFlags);
     await saveRun({
-      newsId: String(record.news_id),
+      newsId: record.news_id,
       expectedFingerprint: record.input.fingerprint!,
       flags,
       workflowStatus: nextWorkflowStatus(record.workflow_status, result, flags),

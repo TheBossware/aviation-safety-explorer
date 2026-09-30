@@ -250,7 +250,7 @@ export function planPreprocessUpdate(current: PlanCurrent, result: PreprocessRes
 function normalizeRelation(relation: IsitRelation) {
   return {
     type: relation.type,
-    news_id: relation.news_id === null ? null : String(relation.news_id),
+    news_id: relation.news_id,
     article_id: relation.article_id,
     confirmed: relation.confirmed,
   };

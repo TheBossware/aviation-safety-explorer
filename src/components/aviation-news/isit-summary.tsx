@@ -30,7 +30,7 @@ export function IsitSummary({ record }: { record: IsitClassification }) {
           <WorkflowStatusBadge status={record.workflow_status} />
           <OutcomeBadge outcome={outcome} />
         </div>
-        <DetailsButton href={`/isit-review/${String(record.news_id)}`} size="xs" />
+        <DetailsButton href={`/isit-review/${record.news_id}`} size="xs" />
       </div>
 
       {first && (

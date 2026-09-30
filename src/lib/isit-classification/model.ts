@@ -1,4 +1,4 @@
-import mongoose, { Schema, type Model } from "mongoose";
+import mongoose, { Schema, type Model, type Types } from "mongoose";
 
 import { ISIT_DIMENSIONS } from "@/lib/isit-taxonomy/types";
 import {
@@ -6,7 +6,9 @@ import {
   ISIT_RELATION_TYPE_VALUES,
   ISIT_REVIEW_ACTION_VALUES,
   ISIT_WORKFLOW_STATUS_VALUES,
+  type IsitAiSnapshot,
   type IsitClassification,
+  type IsitRelation,
   type IsitReviewEvent,
   type IsitSuggestion,
 } from "./types";
@@ -16,6 +18,21 @@ import {
  * its `category`/`severity` fields keep their existing meaning. Field names are snake_case to
  * match `aviation_news`.
  */
+
+/** An ISIT record as MongoDB stores it: every id is an ObjectId. The repository returns `IsitClassification`. */
+export type IsitClassificationDocument = Omit<IsitClassification, "_id" | "news_id" | "relations" | "ai"> & {
+  _id: Types.ObjectId;
+  news_id: Types.ObjectId;
+  relations: Array<Omit<IsitRelation, "news_id"> & { news_id: Types.ObjectId | null }>;
+  ai: (Omit<IsitAiSnapshot, "suggestion_id"> & { suggestion_id: Types.ObjectId }) | null;
+};
+
+/** A review event as MongoDB stores it. The repository returns `IsitReviewEvent`. */
+export type IsitReviewEventDocument = Omit<IsitReviewEvent, "_id" | "news_id" | "suggestion_id"> & {
+  _id: Types.ObjectId;
+  news_id: Types.ObjectId;
+  suggestion_id: Types.ObjectId | null;
+};
 
 const timestamps = { createdAt: "created_at", updatedAt: "updated_at" } as const;
 
@@ -36,7 +53,7 @@ const CodeAssignmentSchema = new Schema(
   { _id: false }
 );
 
-const IsitClassificationSchema = new Schema<IsitClassification>(
+const IsitClassificationSchema = new Schema<IsitClassificationDocument>(
   {
     news_id: { type: Schema.Types.ObjectId, required: true },
     source_id: { type: String, required: true },
@@ -140,7 +157,7 @@ IsitSuggestionSchema.index({
   status: 1,
 });
 
-const IsitReviewEventSchema = new Schema<IsitReviewEvent>(
+const IsitReviewEventSchema = new Schema<IsitReviewEventDocument>(
   {
     news_id: { type: Schema.Types.ObjectId, required: true },
     action: { type: String, enum: ISIT_REVIEW_ACTION_VALUES, required: true },
@@ -156,14 +173,14 @@ const IsitReviewEventSchema = new Schema<IsitReviewEvent>(
 
 IsitReviewEventSchema.index({ news_id: 1, at: -1 });
 
-export const IsitClassificationModel: Model<IsitClassification> =
-  (mongoose.models.IsitClassification as Model<IsitClassification>) ??
-  mongoose.model<IsitClassification>("IsitClassification", IsitClassificationSchema);
+export const IsitClassificationModel: Model<IsitClassificationDocument> =
+  (mongoose.models.IsitClassification as Model<IsitClassificationDocument>) ??
+  mongoose.model<IsitClassificationDocument>("IsitClassification", IsitClassificationSchema);
 
 export const IsitSuggestionModel: Model<IsitSuggestion> =
   (mongoose.models.IsitSuggestion as Model<IsitSuggestion>) ??
   mongoose.model<IsitSuggestion>("IsitSuggestion", IsitSuggestionSchema);
 
-export const IsitReviewEventModel: Model<IsitReviewEvent> =
-  (mongoose.models.IsitReviewEvent as Model<IsitReviewEvent>) ??
-  mongoose.model<IsitReviewEvent>("IsitReviewEvent", IsitReviewEventSchema);
+export const IsitReviewEventModel: Model<IsitReviewEventDocument> =
+  (mongoose.models.IsitReviewEvent as Model<IsitReviewEventDocument>) ??
+  mongoose.model<IsitReviewEventDocument>("IsitReviewEvent", IsitReviewEventSchema);

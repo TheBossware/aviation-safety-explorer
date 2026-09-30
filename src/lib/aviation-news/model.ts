@@ -1,6 +1,9 @@
-import mongoose, { Schema, type Model } from "mongoose";
+import mongoose, { Schema, type Model, type Types } from "mongoose";
 import { SEVERITY_VALUES } from "@/lib/shared/types";
 import type { AviationNews } from "./types";
+
+/** A news item as MongoDB stores it (`_id` is an ObjectId). The repository returns `AviationNews`. */
+export type AviationNewsDocument = Omit<AviationNews, "_id"> & { _id: Types.ObjectId };
 
 /** Owned by n8n; also joined into by the ISIT review queue. */
 export const AVIATION_NEWS_COLLECTION = "aviation_news";
@@ -10,7 +13,7 @@ export const AVIATION_NEWS_COLLECTION = "aviation_news";
  * reads from it, so the schema is intentionally permissive (no `required`)
  * rather than gatekeeping documents this app never writes.
  */
-const AviationNewsSchema = new Schema<AviationNews>(
+const AviationNewsSchema = new Schema<AviationNewsDocument>(
   {
     source_id: String,
     source_name: String,
@@ -46,6 +49,6 @@ const AviationNewsSchema = new Schema<AviationNews>(
   { collection: AVIATION_NEWS_COLLECTION }
 );
 
-export const AviationNewsModel: Model<AviationNews> =
-  (mongoose.models.AviationNews as Model<AviationNews>) ??
-  mongoose.model<AviationNews>("AviationNews", AviationNewsSchema);
+export const AviationNewsModel: Model<AviationNewsDocument> =
+  (mongoose.models.AviationNews as Model<AviationNewsDocument>) ??
+  mongoose.model<AviationNewsDocument>("AviationNews", AviationNewsSchema);

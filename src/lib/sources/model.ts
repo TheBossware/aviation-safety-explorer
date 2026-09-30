@@ -1,7 +1,10 @@
-import mongoose, { Schema, type Model } from "mongoose";
+import mongoose, { Schema, type Model, type Types } from "mongoose";
 import { SOURCE_TYPE_VALUES, type Source } from "./types";
 
-const SourceSchema = new Schema<Source>(
+/** A source as MongoDB stores it (`_id` is an ObjectId). The repository returns `Source`. */
+export type SourceDocument = Omit<Source, "_id"> & { _id: Types.ObjectId };
+
+const SourceSchema = new Schema<SourceDocument>(
   {
     id: { type: String, required: true, unique: true },
     name: { type: String, required: true },
@@ -13,5 +16,5 @@ const SourceSchema = new Schema<Source>(
   { timestamps: true, collection: "sources" }
 );
 
-export const SourceModel: Model<Source> =
-  (mongoose.models.Source as Model<Source>) ?? mongoose.model<Source>("Source", SourceSchema);
+export const SourceModel: Model<SourceDocument> =
+  (mongoose.models.Source as Model<SourceDocument>) ?? mongoose.model<SourceDocument>("Source", SourceSchema);

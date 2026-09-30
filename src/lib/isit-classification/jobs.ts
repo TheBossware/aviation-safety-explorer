@@ -51,7 +51,7 @@ export async function planSeed(): Promise<SeedPlan> {
   for (const item of news) {
     const scope = decideScope(item);
     if (scope.inScope) inScope.push(item);
-    else skipped.push({ id: String(item._id), reason: scope.reason });
+    else skipped.push({ id: item._id, reason: scope.reason });
   }
   return { news, inScope, skipped };
 }
@@ -77,17 +77,17 @@ export interface PreprocessAllPlan {
 
 export async function planPreprocessAll(): Promise<PreprocessAllPlan> {
   const news = (await findAllBySource(ISIT_SOURCE_ID)).filter((item) => decideScope(item).inScope);
-  const records = new Map((await findByNewsIds(news.map((item) => String(item._id)))).map((r) => [String(r.news_id), r]));
-  const unseeded = news.filter((item) => !records.has(String(item._id)));
-  const seeded = news.filter((item) => records.has(String(item._id)));
+  const records = new Map((await findByNewsIds(news.map((item) => item._id))).map((r) => [r.news_id, r]));
+  const unseeded = news.filter((item) => !records.has(item._id));
+  const seeded = news.filter((item) => records.has(item._id));
 
-  const results = new Map(seeded.map((item) => [String(item._id), preprocess(item)]));
+  const results = new Map(seeded.map((item) => [item._id, preprocess(item)]));
   const relations = buildRelations(
     seeded.map((item) => {
-      const result = results.get(String(item._id))!;
+      const result = results.get(item._id)!;
       return {
-        newsId: String(item._id),
-        articleId: records.get(String(item._id))!.article_id,
+        newsId: item._id,
+        articleId: records.get(item._id)!.article_id,
         referencedArticleId: result.referencedArticleId,
         isRetraction: result.flags.includes("retraction_candidate"),
       };
@@ -97,7 +97,7 @@ export async function planPreprocessAll(): Promise<PreprocessAllPlan> {
   const writes: PreprocessWrite[] = [];
   let inputChanged = 0;
   for (const item of seeded) {
-    const id = String(item._id);
+    const id = item._id;
     const record = records.get(id)!;
     const plan = planPreprocessUpdate(record, results.get(id)!, relations.get(id) ?? []);
     if (plan.inputChanged) inputChanged++;
@@ -149,12 +149,12 @@ export async function planClassify({ limit = Infinity, ids, fetchedBefore }: Cla
   const taxonomy = loadIsitTaxonomy();
   const key = { taxonomy_version: taxonomy.version, model: ISIT_MODEL, prompt_version: PROMPT_VERSION };
 
-  const newsById = new Map((await findAllBySource(ISIT_SOURCE_ID)).map((item) => [String(item._id), item]));
+  const newsById = new Map((await findAllBySource(ISIT_SOURCE_ID)).map((item) => [item._id, item]));
   let records = (await findAllClassifications()).filter((r) => r.workflow_status !== "approved");
-  if (ids) records = records.filter((r) => ids.includes(String(r.news_id)));
+  if (ids) records = records.filter((r) => ids.includes(r.news_id));
 
   const history = await findRunHistory(
-    records.filter((r) => r.input.fingerprint).map((r) => ({ newsId: String(r.news_id), fingerprint: r.input.fingerprint! })),
+    records.filter((r) => r.input.fingerprint).map((r) => ({ newsId: r.news_id, fingerprint: r.input.fingerprint! })),
     key
   );
 
@@ -164,7 +164,7 @@ export async function planClassify({ limit = Infinity, ids, fetchedBefore }: Cla
   let outdatedInput = 0;
   let fetchedTooLate = 0;
   for (const record of records) {
-    const id = String(record.news_id);
+    const id = record.news_id;
     const news = newsById.get(id);
     const past = history.get(id);
     // Not preprocessed yet (counted as `unprocessed` below), or its news item is gone.
@@ -231,7 +231,7 @@ async function moveToReview(exhausted: IsitClassification[]): Promise<number> {
   let moved = 0;
   for (const record of exhausted) {
     if (record.workflow_status !== "needs_review") {
-      await markForReview(String(record.news_id), mergeFlags(record.flags, ["ai_error"]));
+      await markForReview(record.news_id, mergeFlags(record.flags, ["ai_error"]));
       moved++;
     }
   }
@@ -256,7 +256,7 @@ export async function runClassify(plan: ClassifyPlan, { deadline, onRecord }: Cl
   async function worker() {
     while (next < batch.length && !stop.error && !(deadline && Date.now() >= deadline)) {
       const { record, news } = batch[next++];
-      const id = String(record.news_id);
+      const id = record.news_id;
       const pre = preprocess(news);
       let result;
       try {

@@ -32,7 +32,13 @@ shared with n8n, so keep that guard there even though callers filter first.
 **Types.** Everything a feature exposes — including query result shapes like `AirlineCount` or
 `SourceActivity` — lives in its `types.ts`; components import types from there, never from
 `repository.ts`. Display labels sit next to their value list (`SEVERITY_LABELS`,
-`OUTCOME_LABELS`, `WORKFLOW_STATUS_LABELS`). Check untrusted strings (query params, form fields)
+`OUTCOME_LABELS`, `WORKFLOW_STATUS_LABELS`). Two shapes per stored entity: `XDocument` in
+`model.ts` is what MongoDB stores (ids are `Types.ObjectId`; the Schema, Model and `.lean<>()`
+use it), `X` in `types.ts` is what repositories return (ids are `string`, including nested ones
+like `relations[].news_id` and `ai.suggestion_id`). Repositories convert in `serialize()` on read
+and back to ObjectId on write, so code outside them never calls `String(x._id)`. Exception:
+`IsitSuggestion` stays in its stored shape (server-only, and its `_id` is written back as a
+reference). Check untrusted strings (query params, form fields)
 against a value list with `isOneOf()` from `src/lib/shared/guards.ts` instead of
 `includes()` + `as T`. Read `IsitSuggestion.stages` only through `readStages()`
 (`isit-classification/stages.ts`), the one place its shape is asserted.

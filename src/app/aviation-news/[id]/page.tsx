@@ -19,7 +19,7 @@ export default async function IncidentDetailPage({ params }: PageProps) {
   if (!item) notFound();
 
   // Only AvHerald items have ISIT records; show one once the AI or a reviewer has produced a result.
-  const isit = await isitRepository.findByNewsId(String(item._id));
+  const isit = await isitRepository.findByNewsId(item._id);
   const hasIsit = Boolean(isit && (isit.ai || isit.final));
 
   return (
@@ -37,7 +37,7 @@ export default async function IncidentDetailPage({ params }: PageProps) {
                 ISIT Taxonomy
               </span>
             }
-            action={<DetailsButton href={`/isit-review/${String(item._id)}`}>ISIT Review</DetailsButton>}
+            action={<DetailsButton href={`/isit-review/${item._id}`}>ISIT Review</DetailsButton>}
             className="border border-primary/60 xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto"
           />
         </div>

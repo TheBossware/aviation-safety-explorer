@@ -66,7 +66,7 @@ export function SourceDialog({ source }: SourceDialogProps) {
 function SourceForm({ source, onSaved }: { source?: Source; onSaved: () => void }) {
   const isEditing = Boolean(source);
   const action = isEditing
-    ? updateSourceAction.bind(null, String(source!._id))
+    ? updateSourceAction.bind(null, source!._id)
     : createSourceAction;
   const [state, formAction, pending] = useActionState<SourceFormState, FormData>(action, {});
 

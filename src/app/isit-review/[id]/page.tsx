@@ -37,7 +37,7 @@ export default async function IsitReviewDetailPage({ params }: PageProps) {
   ]);
   if (!record || !news) notFound();
 
-  const suggestion = record.ai ? await isitRepository.findSuggestionById(String(record.ai.suggestion_id)) : null;
+  const suggestion = record.ai ? await isitRepository.findSuggestionById(record.ai.suggestion_id) : null;
   const stages = readStages(suggestion);
   const taxonomy = loadIsitTaxonomy();
 

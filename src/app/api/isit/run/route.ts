@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       return Response.json({
         dryRun,
         seed: { inScope: seedPlan.inScope.length, skipped: seedPlan.skipped.length },
-        classify: { ...planned, wouldClassify: plan.batch.map(({ news }) => ({ id: String(news._id), title: news.title })) },
+        classify: { ...planned, wouldClassify: plan.batch.map(({ news }) => ({ id: news._id, title: news.title })) },
       });
     }
 

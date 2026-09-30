@@ -22,7 +22,7 @@ async function main() {
   for (const { id, reason } of skipped) console.log(`  skipped ${id}: ${reason}`);
 
   if (!write) {
-    const existing = await findExistingNewsIds(inScope.map((item) => String(item._id)));
+    const existing = await findExistingNewsIds(inScope.map((item) => item._id));
     console.log(`dry run: would insert ${inScope.length - existing.size}, already present ${existing.size}`);
     console.log("re-run with --write to apply");
     return;

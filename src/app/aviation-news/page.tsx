@@ -27,8 +27,8 @@ export default async function AviationNewsPage({ searchParams }: PageProps) {
     sourcesRepository.findActive(),
     aviationNewsRepository.airlineCounts(),
   ]);
-  const isitRecords = await isitRepository.findByNewsIds(items.map((item) => String(item._id)));
-  const isitByNewsId = new Map(isitRecords.map((record) => [String(record.news_id), record]));
+  const isitRecords = await isitRepository.findByNewsIds(items.map((item) => item._id));
+  const isitByNewsId = new Map(isitRecords.map((record) => [record.news_id, record]));
   const choices: FilterChoices = { categories, sources, airlines };
 
   return (

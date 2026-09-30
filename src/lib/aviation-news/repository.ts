@@ -2,7 +2,7 @@ import type { QueryFilter } from "mongoose";
 
 import { dbConnect } from "@/lib/mongodb";
 import type { Severity } from "@/lib/shared/types";
-import { AviationNewsModel } from "./model";
+import { AviationNewsModel, type AviationNewsDocument } from "./model";
 import type {
   AirlineCount,
   AviationNews,
@@ -16,7 +16,7 @@ import type {
 const DEFAULT_PAGE_SIZE = 12;
 
 /** `.lean()` returns `_id` as an ObjectId; normalize to a string everywhere. */
-function serialize(doc: AviationNews): AviationNews {
+function serialize(doc: AviationNewsDocument): AviationNews {
   return { ...doc, _id: String(doc._id) };
 }
 
@@ -25,8 +25,8 @@ function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function buildQuery(filter: AviationNewsFilter): QueryFilter<AviationNews> {
-  const query: QueryFilter<AviationNews> = {};
+function buildQuery(filter: AviationNewsFilter): QueryFilter<AviationNewsDocument> {
+  const query: QueryFilter<AviationNewsDocument> = {};
 
   if (filter.category) query.category = filter.category;
   if (filter.severity?.length) query.severity = { $in: filter.severity };
@@ -61,7 +61,7 @@ export async function findFiltered(filter: AviationNewsFilter): Promise<Aviation
       .sort({ published_at: sortDirection })
       .skip((page - 1) * pageSize)
       .limit(pageSize)
-      .lean<AviationNews[]>(),
+      .lean<AviationNewsDocument[]>(),
     AviationNewsModel.countDocuments(query),
   ]);
 
@@ -73,13 +73,13 @@ export async function findRecent(limit: number, filter: { severity?: Severity[] 
   const docs = await AviationNewsModel.find(filter.severity?.length ? { severity: { $in: filter.severity } } : {})
     .sort({ published_at: -1 })
     .limit(limit)
-    .lean<AviationNews[]>();
+    .lean<AviationNewsDocument[]>();
   return docs.map(serialize);
 }
 
 export async function findById(id: string): Promise<AviationNews | null> {
   await dbConnect();
-  const doc = await AviationNewsModel.findById(id).lean<AviationNews>();
+  const doc = await AviationNewsModel.findById(id).lean<AviationNewsDocument>();
   return doc ? serialize(doc) : null;
 }
 
@@ -88,7 +88,7 @@ export async function findAllBySource(sourceId: string): Promise<AviationNews[]>
   await dbConnect();
   const docs = await AviationNewsModel.find({ source_id: sourceId })
     .sort({ published_at: 1 })
-    .lean<AviationNews[]>();
+    .lean<AviationNewsDocument[]>();
   return docs.map(serialize);
 }
 

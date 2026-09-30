@@ -15,7 +15,7 @@ export function HistoryCard({ events }: { events: IsitReviewEvent[] }) {
       <CardContent className="p-0 pt-4">
         <ul className="flex flex-col gap-2 text-sm">
           {events.map((event) => (
-            <li key={String(event._id)} className="border-l-2 pl-3">
+            <li key={event._id} className="border-l-2 pl-3">
               <span className="text-xs text-muted-foreground">{recordDate(event.at)}</span>{" "}
               <span className="font-medium">{event.actor}</span> {describeReviewEvent(event)}
               {event.comment && <p className="text-muted-foreground">“{event.comment}”</p>}

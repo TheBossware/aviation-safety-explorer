@@ -34,7 +34,7 @@ export function SourcesTable({ sources }: { sources: Source[] }) {
       </TableHeader>
       <TableBody>
         {sources.map((source) => (
-          <TableRow key={String(source._id)}>
+          <TableRow key={source._id}>
             <TableCell className="font-medium">{source.name}</TableCell>
             <TableCell>{SOURCE_TYPE_LABELS[source.type] ?? source.type}</TableCell>
             <TableCell>{source.category}</TableCell>
@@ -56,7 +56,7 @@ export function SourcesTable({ sources }: { sources: Source[] }) {
             <TableCell>
               <div className="flex justify-end gap-1">
                 <SourceDialog source={source} />
-                <DeleteSourceAlert id={String(source._id)} name={source.name} />
+                <DeleteSourceAlert id={source._id} name={source.name} />
               </div>
             </TableCell>
           </TableRow>

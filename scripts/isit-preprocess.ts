@@ -23,7 +23,7 @@ async function main() {
 
   console.log("\nflags:");
   for (const flag of PREPROCESS_FLAGS) {
-    const flagged = seeded.filter((item) => results.get(String(item._id))!.flags.includes(flag));
+    const flagged = seeded.filter((item) => results.get(item._id)!.flags.includes(flag));
     console.log(`  ${flag}: ${flagged.length}`);
     if (LISTED_FLAGS.has(flag)) for (const item of flagged) console.log(`    ${item._id} ${item.title.slice(0, 110)}`);
   }
