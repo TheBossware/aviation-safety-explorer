@@ -10,7 +10,9 @@
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "isit:seed": "node --env-file=.env.local --import tsx scripts/isit-seed.ts",
     "isit:preprocess": "node --env-file=.env.local --import tsx scripts/isit-preprocess.ts",
-    "isit:batch": "node --env-file=.env.local --import tsx scripts/isit-batch.ts"
+    "isit:batch": "node --env-file=.env.local --import tsx scripts/isit-batch.ts",
+    "isit:revalidate": "node --env-file=.env.local --import tsx scripts/isit-revalidate.ts",
+    "isit:costs": "node --env-file=.env.local --import tsx scripts/isit-costs.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",

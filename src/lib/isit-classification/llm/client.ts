@@ -43,22 +43,42 @@ export class StageError extends Error {
   }
 }
 
+/**
+ * The account, not the record, is the problem (no credit, bad key, no access). The batch must stop
+ * instead of burning every remaining record's retry budget on the same error.
+ */
+export class FatalClientError extends Error {}
+
+function toFatal(error: unknown): FatalClientError | null {
+  if (error instanceof Anthropic.AuthenticationError || error instanceof Anthropic.PermissionDeniedError) {
+    return new FatalClientError(error.message);
+  }
+  if (error instanceof Anthropic.BadRequestError && /credit balance/i.test(error.message)) {
+    return new FatalClientError(error.message);
+  }
+  return null;
+}
+
 export function createAnthropicClient(model: string = ISIT_MODEL): IsitModelClient {
   const client = new Anthropic(); // ANTHROPIC_API_KEY from the environment; SDK retries 429/5xx twice
 
   return {
     model,
     async run<T>({ stage, system, user, schema }: StageRequest<T>): Promise<StageResponse<T>> {
-      const response = await client.beta.messages.parse({
-        model,
-        max_tokens: 16000,
-        // On a policy decline the API re-runs the request on a fallback model inside the same call.
-        betas: ["server-side-fallback-2026-07-01"],
-        fallbacks: "default",
-        output_config: { effort: ISIT_EFFORT, format: betaZodOutputFormat(schema) },
-        system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-        messages: [{ role: "user", content: user }],
-      });
+      const response = await client.beta.messages
+        .parse({
+          model,
+          max_tokens: 16000,
+          // On a policy decline the API re-runs the request on a fallback model inside the same call.
+          betas: ["server-side-fallback-2026-07-01"],
+          fallbacks: "default",
+          output_config: { effort: ISIT_EFFORT, format: betaZodOutputFormat(schema) },
+          system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+          messages: [{ role: "user", content: user }],
+        })
+        .catch((error: unknown) => {
+          throw toFatal(error) ?? error;
+        });
 
       if (response.stop_reason === "refusal") {
         throw new StageError(stage, `model declined (${response.stop_details?.category ?? "no category"})`);

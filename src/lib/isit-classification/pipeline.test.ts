@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { loadIsitTaxonomy } from "@/lib/isit-taxonomy/taxonomy";
-import type { IsitModelClient, StageRequest } from "./llm/client";
+import { FatalClientError, type IsitModelClient, type StageRequest } from "./llm/client";
 import type { GateOutput, RouteOutput, SelectOutput } from "./llm/schemas";
 import { classify, mergeFlags, nextWorkflowStatus } from "./pipeline";
 import { preprocess } from "./preprocess";
@@ -140,6 +140,18 @@ describe("classify", () => {
   });
 });
 
+describe("account-level failures", () => {
+  it("propagates instead of recording a failed attempt for the record", async () => {
+    const client: IsitModelClient = {
+      model: "fake",
+      async run() {
+        throw new FatalClientError("Your credit balance is too low");
+      },
+    };
+    await assert.rejects(classify(NEWS, preprocess(NEWS), taxonomy, client), FatalClientError);
+  });
+});
+
 describe("nextWorkflowStatus", () => {
   const ok = { status: "succeeded", outcome: "classified", codes: [], flags: [], stages: {}, error: null, usage: {}, servedModels: [] } as never;
 
@@ -172,5 +184,27 @@ describe("evidenceFound", () => {
   it("rejects paraphrases and empty quotes", () => {
     assert.equal(evidenceFound("fumes in the cabin", sources), false);
     assert.equal(evidenceFound("  ", sources), false);
+  });
+});
+
+describe("evidenceFound with broken source encoding", () => {
+  // Real AvHerald text as stored by n8n: ’ and ° were replaced by U+FFFD.
+  const article =
+    "the captain�s inadequate compensation for gusting crosswind wind conditions while attempting to land. " +
+    "allowed the autopilot to pitch the aircraft nose-down to -7.6� with an associated 6,240 ft/min descent rate.";
+
+  it("matches correct quotes despite replacement characters", () => {
+    assert.ok(evidenceFound("The captain's inadequate compensation for gusting crosswind wind conditions", [article]));
+    assert.ok(evidenceFound("pitch the aircraft nose-down to -7.6° with an associated 6,240 ft/min descent rate", [article]));
+  });
+
+  it("still requires the words themselves, in order", () => {
+    assert.equal(evidenceFound("the captain's poor compensation for gusting crosswind", [article]), false);
+    assert.equal(evidenceFound("crosswind gusting", [article]), false);
+    assert.equal(evidenceFound("nose-down to -7.5°", [article]), false);
+  });
+
+  it("matches whole words only", () => {
+    assert.equal(evidenceFound("aptain", [article]), false);
   });
 });

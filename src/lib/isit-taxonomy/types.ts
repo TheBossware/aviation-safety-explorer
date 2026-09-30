@@ -74,6 +74,7 @@ export interface IsitNode {
   level: IsitLevel;
   name: string;
   label: string;
+  definition: string | null;
   dimension: IsitDimension;
   parentCode: string | null;
   selectable: boolean;

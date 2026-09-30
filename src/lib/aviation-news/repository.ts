@@ -29,6 +29,8 @@ export interface AviationNewsFilter {
   aircraft?: string;
   /** Matches within `tags`. */
   tag?: string;
+  /** Exact airline name within `airlines` (operator or the airline flown for). */
+  airline?: string;
   /** Order by `published_at`; defaults to `desc` (newest first). */
   sort?: "asc" | "desc";
   page?: number;
@@ -48,6 +50,7 @@ function buildQuery(filter: AviationNewsFilter): QueryFilter<AviationNews> {
   if (filter.category) query.category = filter.category;
   if (filter.severity?.length) query.severity = { $in: filter.severity };
   if (filter.sourceId) query.source_id = filter.sourceId;
+  if (filter.airline) query.airlines = filter.airline;
   if (filter.publishedAfter) query.published_at = { $gte: filter.publishedAfter };
   if (filter.aircraft) {
     query.source_tags = { $regex: escapeRegex(filter.aircraft), $options: "i" };
@@ -84,9 +87,9 @@ export async function findFiltered(filter: AviationNewsFilter): Promise<Aviation
   return { items: docs.map(serialize), total, page, pageSize };
 }
 
-export async function findRecent(limit: number): Promise<AviationNews[]> {
+export async function findRecent(limit: number, filter: { severity?: Severity[] } = {}): Promise<AviationNews[]> {
   await dbConnect();
-  const docs = await AviationNewsModel.find()
+  const docs = await AviationNewsModel.find(filter.severity?.length ? { severity: { $in: filter.severity } } : {})
     .sort({ published_at: -1 })
     .limit(limit)
     .lean<AviationNews[]>();
@@ -108,6 +111,24 @@ export async function findAllBySource(sourceId: string): Promise<AviationNews[]>
   return docs.map(serialize);
 }
 
+export interface AirlineCount {
+  name: string;
+  count: number;
+}
+
+/** Every airline named in the news, with how many items mention it, alphabetically. */
+export async function airlineCounts(): Promise<AirlineCount[]> {
+  await dbConnect();
+  const rows = await AviationNewsModel.aggregate<{ _id: string; count: number }>([
+    { $match: { "airlines.0": { $exists: true } } },
+    { $unwind: "$airlines" },
+    { $group: { _id: "$airlines", count: { $sum: 1 } } },
+  ]);
+  return rows
+    .map((row) => ({ name: row._id, count: row.count }))
+    .sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }));
+}
+
 export async function distinctCategories(): Promise<string[]> {
   await dbConnect();
   const categories = await AviationNewsModel.distinct("category");
@@ -119,70 +140,111 @@ export async function count(filter: Partial<AviationNews> = {}): Promise<number>
   return AviationNewsModel.countDocuments(filter);
 }
 
-export interface DailyVolumeRow {
-  date: string; // YYYY-MM-DD
-  source: string;
-  count: number;
-}
-
-/** Daily ingestion volume per source (by `fetched_at`, i.e. when this app's pipeline received it). */
-export async function dailyVolumeBySource(days: number): Promise<DailyVolumeRow[]> {
+/** Items whose `field` date is on or after `since`, optionally limited to some severities. */
+export async function countSince(
+  field: "published_at" | "fetched_at",
+  since: Date,
+  filter: { severity?: Severity[] } = {}
+): Promise<number> {
   await dbConnect();
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-  since.setHours(0, 0, 0, 0);
-
-  const docs = await AviationNewsModel.find({ fetched_at: { $gte: since } })
-    .select({ fetched_at: 1, source_name: 1 })
-    .lean<Pick<AviationNews, "fetched_at" | "source_name">[]>();
-
-  const counts = new Map<string, number>();
-  for (const doc of docs) {
-    const date = new Date(doc.fetched_at).toISOString().slice(0, 10);
-    const key = `${date}::${doc.source_name}`;
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-
-  return Array.from(counts.entries()).map(([key, count]) => {
-    const [date, source] = key.split("::");
-    return { date, source, count };
+  return AviationNewsModel.countDocuments({
+    [field]: { $gte: since },
+    ...(filter.severity?.length ? { severity: { $in: filter.severity } } : {}),
   });
 }
 
-export interface SourceCount {
-  source: string;
-  count: number;
-}
-
-export async function countGroupedBySource(): Promise<SourceCount[]> {
-  await dbConnect();
-  const docs = await AviationNewsModel.find()
-    .select({ source_name: 1 })
-    .lean<Pick<AviationNews, "source_name">[]>();
-
-  const counts = new Map<string, number>();
-  for (const doc of docs) {
-    counts.set(doc.source_name, (counts.get(doc.source_name) ?? 0) + 1);
-  }
-
-  return Array.from(counts.entries())
-    .map(([source, count]) => ({ source, count }))
-    .sort((a, b) => b.count - a.count);
-}
-
-export interface SeverityCount {
+export interface WeeklySeverityRow {
+  /** Monday of the week (UTC), YYYY-MM-DD. */
+  week: string;
   severity: Severity;
   count: number;
 }
 
-export async function countGroupedBySeverity(): Promise<SeverityCount[]> {
+/** Items per publication week (Monday-based, UTC) and severity since `since`. */
+export async function weeklySeverityCounts(since: Date): Promise<WeeklySeverityRow[]> {
   await dbConnect();
-  const docs = await AviationNewsModel.find().select({ severity: 1 }).lean<Pick<AviationNews, "severity">[]>();
+  const rows = await AviationNewsModel.aggregate<{ _id: { week: Date; severity: Severity }; count: number }>([
+    { $match: { published_at: { $gte: since } } },
+    {
+      $group: {
+        _id: {
+          week: { $dateTrunc: { date: "$published_at", unit: "week", startOfWeek: "monday", timezone: "UTC" } },
+          severity: "$severity",
+        },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+  return rows.map((row) => ({
+    week: row._id.week.toISOString().slice(0, 10),
+    severity: row._id.severity,
+    count: row.count,
+  }));
+}
 
-  const counts = new Map<Severity, number>();
-  for (const doc of docs) {
-    counts.set(doc.severity, (counts.get(doc.severity) ?? 0) + 1);
+export interface SourceActivity {
+  /** `source_id`, what the list's `?source=` filter takes. */
+  sourceId: string;
+  source: string;
+  total: number;
+  bySeverity: Partial<Record<Severity, number>>;
+  lastFetchedAt: Date | null;
+  lastPublishedAt: Date | null;
+}
+
+/** Per source: item count, severity mix, and when it last delivered something. Busiest first. */
+export async function sourceActivity(): Promise<SourceActivity[]> {
+  await dbConnect();
+  const rows = await AviationNewsModel.aggregate<{
+    _id: { sourceId: string; source: string; severity: Severity };
+    count: number;
+    lastFetchedAt: Date | null;
+    lastPublishedAt: Date | null;
+  }>([
+    {
+      $group: {
+        _id: { sourceId: "$source_id", source: "$source_name", severity: "$severity" },
+        count: { $sum: 1 },
+        lastFetchedAt: { $max: "$fetched_at" },
+        lastPublishedAt: { $max: "$published_at" },
+      },
+    },
+  ]);
+
+  const bySource = new Map<string, SourceActivity>();
+  for (const row of rows) {
+    const entry = bySource.get(row._id.sourceId) ?? {
+      sourceId: row._id.sourceId,
+      source: row._id.source,
+      total: 0,
+      bySeverity: {},
+      lastFetchedAt: null,
+      lastPublishedAt: null,
+    };
+    entry.total += row.count;
+    entry.bySeverity[row._id.severity] = (entry.bySeverity[row._id.severity] ?? 0) + row.count;
+    if (row.lastFetchedAt && (!entry.lastFetchedAt || row.lastFetchedAt > entry.lastFetchedAt)) {
+      entry.lastFetchedAt = row.lastFetchedAt;
+    }
+    if (row.lastPublishedAt && (!entry.lastPublishedAt || row.lastPublishedAt > entry.lastPublishedAt)) {
+      entry.lastPublishedAt = row.lastPublishedAt;
+    }
+    bySource.set(row._id.sourceId, entry);
   }
+  return [...bySource.values()].sort((a, b) => b.total - a.total);
+}
 
-  return Array.from(counts.entries()).map(([severity, count]) => ({ severity, count }));
+export interface CategoryCount {
+  category: string;
+  count: number;
+}
+
+/** Items per category, largest first. */
+export async function countByCategory(): Promise<CategoryCount[]> {
+  await dbConnect();
+  const rows = await AviationNewsModel.aggregate<{ _id: string | null; count: number }>([
+    { $group: { _id: "$category", count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+  ]);
+  return rows.filter((row) => row._id).map((row) => ({ category: row._id!, count: row.count }));
 }

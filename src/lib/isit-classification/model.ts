@@ -87,7 +87,6 @@ const IsitClassificationSchema = new Schema<IsitClassification>(
         {
           outcome: { type: String, enum: ISIT_OUTCOME_VALUES, required: true },
           codes: { type: [CodeAssignmentSchema], default: [] },
-          duplicate_of: { type: Schema.Types.ObjectId, default: null },
           taxonomy_version: { type: String, required: true },
           approved_by: { type: String, required: true },
           approved_at: { type: Date, required: true },
@@ -120,7 +119,10 @@ const IsitSuggestionSchema = new Schema<IsitSuggestion>(
     stages: { type: Schema.Types.Mixed, default: {} },
     error: { type: String, default: null },
     usage: {
-      type: new Schema({ input_tokens: Number, output_tokens: Number }, { _id: false }),
+      type: new Schema(
+        { input_tokens: Number, output_tokens: Number, cache_read_input_tokens: Number, cache_creation_input_tokens: Number },
+        { _id: false }
+      ),
       default: null,
     },
   },

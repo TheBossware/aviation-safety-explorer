@@ -14,19 +14,21 @@ import {
 import { FilterForm } from "@/components/aviation-news/filter-form";
 import type { SearchParams } from "@/lib/shared/search-params";
 import type { Source } from "@/lib/sources/types";
+import type { AirlineCount } from "@/lib/aviation-news/repository";
 
 interface MobileFiltersSheetProps {
   categories: string[];
   sources: Source[];
+  airlines: AirlineCount[];
   searchParams: SearchParams;
 }
 
-export function MobileFiltersSheet({ categories, sources, searchParams }: MobileFiltersSheetProps) {
+export function MobileFiltersSheet({ categories, sources, airlines, searchParams }: MobileFiltersSheetProps) {
   const [open, setOpen] = useState(false);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger render={<Button variant="outline" size="sm" className="lg:hidden" />}>
+      <SheetTrigger render={<Button variant="outline" size="sm" className="bg-card dark:bg-card lg:hidden" />}>
         <SlidersHorizontal className="size-4" />
         Filters
       </SheetTrigger>
@@ -42,6 +44,7 @@ export function MobileFiltersSheet({ categories, sources, searchParams }: Mobile
               idPrefix="mobile"
               categories={categories}
               sources={sources}
+              airlines={airlines}
               searchParams={searchParams}
               onSubmitted={() => setOpen(false)}
             />

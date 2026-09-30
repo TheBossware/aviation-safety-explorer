@@ -203,3 +203,25 @@ describe("retraction wording without a prefix", () => {
     }
   });
 });
+
+describe("planPreprocessUpdate flag order", () => {
+  it("is a no-op when other stages' flags come first (no reordering writes)", () => {
+    const news = item({ published_at: new Date("2026-10-01T00:00:00Z") }); // late_report
+    const result = preprocess(news);
+    const first = planPreprocessUpdate(
+      { workflow_status: "needs_review", flags: [], relations: [], input: { fingerprint: null }, dates: { event_date: null, article_created_at: null, article_updated_at: null } },
+      result,
+      []
+    );
+    const stored = {
+      workflow_status: "needs_review" as const,
+      flags: ["low_confidence", "late_report"],
+      relations: [],
+      input: { fingerprint: result.fingerprint },
+      dates: first.set.dates,
+    };
+    const again = planPreprocessUpdate(stored, result, []);
+    assert.deepEqual(again.set.flags, ["low_confidence", "late_report"]);
+    assert.equal(again.changed, false);
+  });
+});

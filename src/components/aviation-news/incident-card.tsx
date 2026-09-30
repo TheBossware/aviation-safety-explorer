@@ -1,10 +1,13 @@
-import Link from "next/link";
-import { CalendarDays, Plane } from "lucide-react";
+import { CalendarDays, Plane, PlaneTakeoff } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AirlineNames } from "@/components/aviation-news/airline-names";
+import { IsitSummary } from "@/components/aviation-news/isit-summary";
+import { DetailsButton } from "@/components/nav-buttons";
 import { SeverityBadge } from "@/components/aviation-news/severity-badge";
 import type { AviationNews } from "@/lib/aviation-news/types";
+import type { IsitClassification } from "@/lib/isit-classification/types";
 
 const MAX_TAGS = 3;
 
@@ -16,7 +19,7 @@ function formatDate(value: string | Date): string {
   });
 }
 
-export function IncidentCard({ item }: { item: AviationNews }) {
+export function IncidentCard({ item, isit }: { item: AviationNews; isit?: IsitClassification }) {
   const visibleTags = item.tags.slice(0, MAX_TAGS);
   const extraTagCount = item.tags.length - visibleTags.length;
 
@@ -30,6 +33,15 @@ export function IncidentCard({ item }: { item: AviationNews }) {
       </div>
 
       <h3 className="line-clamp-2 text-base leading-6 font-semibold">{item.title}</h3>
+
+      {item.airlines && item.airlines.length > 0 && (
+        <div className="flex items-center gap-1.5 text-sm font-medium">
+          <PlaneTakeoff className="size-3.5 shrink-0 text-muted-foreground" />
+          <span className="truncate">
+            <AirlineNames item={item} />
+          </span>
+        </div>
+      )}
 
       {item.source_tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
@@ -54,6 +66,8 @@ export function IncidentCard({ item }: { item: AviationNews }) {
         <p className="line-clamp-3 text-sm text-muted-foreground">{item.summary}</p>
       )}
 
+      {isit && <IsitSummary record={isit} />}
+
       {visibleTags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {visibleTags.map((tag) => (
@@ -71,12 +85,7 @@ export function IncidentCard({ item }: { item: AviationNews }) {
 
       <div className="mt-auto flex items-center justify-between border-t pt-3 text-xs">
         <span className="text-muted-foreground">{item.source_name}</span>
-        <Link
-          href={`/aviation-news/${item._id}`}
-          className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
-        >
-          View details &rarr;
-        </Link>
+        <DetailsButton href={`/aviation-news/${item._id}`}>View details</DetailsButton>
       </div>
     </Card>
   );

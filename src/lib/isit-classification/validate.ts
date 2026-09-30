@@ -5,25 +5,23 @@ import type { IsitCodeAssignment } from "./types";
 
 /** Nothing the model returns is trusted: codes, branches and quotes are all re-checked here. */
 
-function normalizeForMatch(text: string): string {
-  return text
-    .normalize("NFKC")
-    .replace(/[‘’‛′]/g, "'")
-    .replace(/[“”‟″]/g, '"')
-    .replace(/[–—]/g, "-")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
+/**
+ * Word skeleton of a text: letters and digits only, lower-cased, one space between words.
+ * Punctuation is ignored on purpose: 27 AvHerald articles were stored with a broken encoding
+ * (’ and ° became U+FFFD), so the model's correct "aircraft’s" must still match "aircraft�s".
+ * The words themselves, and their order, still have to match exactly.
+ */
+export function wordSkeleton(text: string): string {
+  return ` ${text.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim()} `;
 }
 
-/** True when every part of the quote (split on ellipses) appears verbatim in one of the sources. */
+/** True when every part of the quote (split on ellipses) appears word for word in one of the sources. */
 export function evidenceFound(quote: string, sources: string[]): boolean {
-  const haystack = sources.map(normalizeForMatch);
+  const haystack = sources.map(wordSkeleton);
   const parts = quote
     .split(/\.\.\.|…/)
-    .map(normalizeForMatch)
-    .map((part) => part.replace(/^["']|["']$/g, "").trim())
-    .filter(Boolean);
+    .map(wordSkeleton)
+    .filter((part) => part.trim());
   return parts.length > 0 && parts.every((part) => haystack.some((text) => text.includes(part)));
 }
 

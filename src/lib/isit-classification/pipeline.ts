@@ -1,14 +1,18 @@
 import type { AviationNews } from "@/lib/aviation-news/types";
 import type { IsitTaxonomy } from "@/lib/isit-taxonomy/taxonomy";
 import { ISIT_DIMENSIONS, type IsitDimension, type IsitIndexEntry } from "@/lib/isit-taxonomy/types";
-import type { IsitModelClient, StageUsage } from "./llm/client";
+import { FatalClientError, type IsitModelClient, type StageUsage } from "./llm/client";
 import { GATE_SYSTEM, recordBlock, routeSystem, SELECT_SYSTEM, selectUser } from "./llm/prompts";
-import { GateSchema, RouteSchema, SelectSchema } from "./llm/schemas";
+import { GateSchema, RouteSchema, SelectSchema, type SelectOutput } from "./llm/schemas";
 import { INPUT_CHANGED_FLAG, type PreprocessResult } from "./preprocess";
 import type { IsitCodeAssignment, IsitOutcome, IsitWorkflowStatus } from "./types";
-import { validateRoute, validateSelection } from "./validate";
+import { validateRoute, validateSelection, type Rejection, type RoutedBranches } from "./validate";
 
-export const PIPELINE_VERSION = "1";
+/**
+ * Code-side pipeline version (validation rules etc.), recorded on every suggestion.
+ * 2: evidence quotes are matched on words only, tolerating broken source encoding.
+ */
+export const PIPELINE_VERSION = "2";
 
 /** Flags owned by the AI stage: replaced on every run. */
 export const AI_FLAGS = [
@@ -135,14 +139,12 @@ export async function classify(
     });
     addUsage(usage, select.usage);
     servedModels.add(select.servedModel);
-    const selection = validateSelection(select.output, routed.branches, taxonomy, sources);
-    stages.select = { output: select.output, rejected: selection.rejected, lowConfidence: selection.lowConfidence };
-    if (selection.rejected.length) flags.add("code_dropped");
-    if (selection.lowConfidence.length) flags.add("low_confidence");
-
-    if (!selection.accepted.some((code) => code.dimension === "event")) return done("insufficient_evidence", selection.accepted);
-    return done("classified", selection.accepted);
+    const selected = applySelection(select.output, routed.branches, taxonomy, sources);
+    stages.select = selected.stage;
+    selected.flags.forEach((flag) => flags.add(flag));
+    return done(selected.outcome, selected.codes);
   } catch (error) {
+    if (error instanceof FatalClientError) throw error; // not this record's fault: no failed attempt is recorded
     flags.add("ai_error");
     return {
       status: "failed",
@@ -155,6 +157,33 @@ export async function classify(
       servedModels: [...servedModels],
     };
   }
+}
+
+/**
+ * Last step of a run: validate the selected codes and derive outcome and flags. Also used to
+ * re-validate stored model output when validation rules change, without calling the model again.
+ */
+export function applySelection(
+  output: SelectOutput,
+  branches: RoutedBranches,
+  taxonomy: IsitTaxonomy,
+  sources: string[]
+): {
+  outcome: IsitOutcome;
+  codes: IsitCodeAssignment[];
+  flags: string[];
+  stage: { output: SelectOutput; rejected: Rejection[]; lowConfidence: string[] };
+} {
+  const selection = validateSelection(output, branches, taxonomy, sources);
+  const flags: string[] = [];
+  if (selection.rejected.length) flags.push("code_dropped");
+  if (selection.lowConfidence.length) flags.push("low_confidence");
+  return {
+    outcome: selection.accepted.some((code) => code.dimension === "event") ? "classified" : "insufficient_evidence",
+    codes: selection.accepted,
+    flags,
+    stage: { output, rejected: selection.rejected, lowConfidence: selection.lowConfidence },
+  };
 }
 
 /** Merges this run's AI flags into the stored ones, replacing earlier AI flags and clearing `input_changed`. */

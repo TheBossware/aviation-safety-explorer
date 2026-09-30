@@ -108,7 +108,7 @@ function SourceForm({ source, onSaved }: { source?: Source; onSaved: () => void 
               id="source-name"
               name="name"
               defaultValue={source?.name}
-              placeholder="FAA News"
+              placeholder="EASA News"
               required
             />
           </div>

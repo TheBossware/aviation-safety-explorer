@@ -1,4 +1,5 @@
 import * as aviationNewsRepository from "@/lib/aviation-news/repository";
+import * as isitRepository from "@/lib/isit-classification/repository";
 import * as sourcesRepository from "@/lib/sources/repository";
 import { SEVERITY_VALUES, type Severity } from "@/lib/shared/types";
 import { toArray, toSingle, type SearchParams } from "@/lib/shared/search-params";
@@ -63,15 +64,19 @@ export default async function AviationNewsPage({ searchParams }: PageProps) {
     q: toSingle(params.q),
     aircraft: toSingle(params.aircraft),
     tag: toSingle(params.tag),
+    airline: normalize(toSingle(params.airline)),
     sort: toSortOrder(toSingle(params.sort)),
     page: Number(toSingle(params.page)) || 1,
   };
 
-  const [{ items, total, page, pageSize }, categories, sources] = await Promise.all([
+  const [{ items, total, page, pageSize }, categories, sources, airlines] = await Promise.all([
     aviationNewsRepository.findFiltered(filter),
     aviationNewsRepository.distinctCategories(),
     sourcesRepository.findAll({ active: true }),
+    aviationNewsRepository.airlineCounts(),
   ]);
+  const isitRecords = await isitRepository.findByNewsIds(items.map((item) => String(item._id)));
+  const isitByNewsId = new Map(isitRecords.map((record) => [String(record.news_id), record]));
 
   return (
     <div className="flex flex-1 flex-col gap-4 lg:flex-row lg:items-start lg:gap-2">
@@ -79,16 +84,16 @@ export default async function AviationNewsPage({ searchParams }: PageProps) {
         <IncidentHeader searchParams={params} />
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-4">
-          <FilterToolbar categories={categories} sources={sources} searchParams={params} />
-          <MobileFiltersSheet categories={categories} sources={sources} searchParams={params} />
+          <FilterToolbar categories={categories} sources={sources} airlines={airlines} searchParams={params} />
+          <MobileFiltersSheet categories={categories} sources={sources} airlines={airlines} searchParams={params} />
         </div>
 
-        <IncidentGrid items={items} />
+        <IncidentGrid items={items} isitByNewsId={isitByNewsId} />
 
         <Pagination page={page} pageSize={pageSize} total={total} searchParams={params} />
       </div>
 
-      <FilterPanelDesktop categories={categories} sources={sources} searchParams={params} />
+      <FilterPanelDesktop categories={categories} sources={sources} airlines={airlines} searchParams={params} />
     </div>
   );
 }

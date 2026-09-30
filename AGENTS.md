@@ -16,7 +16,7 @@ data access) and `src/app/<feature>/{page.tsx, actions.ts}` (route + Server Acti
 reintroduce a passthrough service layer between them.
 
 **Naming.** Folders under `src/lib/` and `src/app/` are kebab-case (`aviation-news`,
-`isit-taxonomy`, `recipient-groups`) even where the MongoDB collection name is snake_case
+`isit-taxonomy`, `isit-classification`) even where the MongoDB collection name is snake_case
 (`aviation_news`, etc. — that's the real, already-populated collection name; never rename it).
 
 **Database.** `MONGODB_URI` points at a real, already-populated MongoDB Atlas cluster shared
@@ -37,6 +37,15 @@ the `render` prop for polymorphism (not `asChild`), and pass `nativeButton={fals
 (`bg-card`, `text-muted-foreground`, `border-border`, etc.), never hardcode hex — except severity
 colors, which are a deliberate fixed status palette (`src/lib/shared/severity-colors.ts` +
 `SEVERITY_DOT_COLOR`) reused identically across badges and charts.
+
+**Navigation buttons.** "Back to …" and "Details" / "View details" navigation is always a real
+button, never a plain text link — users must see at a glance where to click. Use `BackButton` and
+`DetailsButton` from `src/components/nav-buttons.tsx` (primary/orange `Button` rendered as a
+`Link`, arrow icon, `size` `sm` by default, `xs` inside compact boxes); don't hand-roll
+`<Link className="… hover:underline">` for these. Links to other sites (source article, original
+post) use `ExternalButton` from the same file: outlined, external-link icon, opens in a new tab.
+Secondary in-app links sitting next to a primary one (e.g. "Review guide" beside "Back to …") are
+`variant="outline"` buttons, so only one orange button competes for attention.
 
 **Filtering.** List pages filter via URL `searchParams`, not client-side state — see
 `src/components/aviation-news/filter-form.tsx`. Forms use native `method="GET"` for progressive

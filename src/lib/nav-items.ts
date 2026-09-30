@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { LayoutDashboard, Newspaper, Users2, Rss } from "lucide-react";
+import { ClipboardCheck, LayoutDashboard, Newspaper } from "lucide-react";
 
 export interface NavItem {
   title: string;
@@ -10,6 +10,5 @@ export interface NavItem {
 export const navMain: NavItem[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Aviation News", url: "/aviation-news", icon: Newspaper },
-  // { title: "Recipient Groups", url: "/recipient-groups", icon: Users2 },
-  // { title: "Sources", url: "/sources", icon: Rss },
+  { title: "ISIT Review", url: "/isit-review", icon: ClipboardCheck },
 ];

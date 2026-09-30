@@ -6,11 +6,8 @@
  */
 import mongoose from "mongoose";
 
-import { findAllBySource } from "@/lib/aviation-news/repository";
-import { buildRelations, planPreprocessUpdate, PREPROCESS_FLAGS, preprocess } from "@/lib/isit-classification/preprocess";
-import { applyPreprocess, findByNewsIds, type PreprocessWrite } from "@/lib/isit-classification/repository";
-import { decideScope } from "@/lib/isit-classification/scope";
-import { ISIT_SOURCE_ID } from "@/lib/isit-classification/types";
+import { planPreprocessAll, preprocessAll } from "@/lib/isit-classification/jobs";
+import { PREPROCESS_FLAGS } from "@/lib/isit-classification/preprocess";
 
 /** Flags worth listing one by one in the report; the rest are only counted. */
 const LISTED_FLAGS = new Set(["retraction_candidate", "non_occurrence_candidate", "date_anomaly", "missing_event_date", "missing_content"]);
@@ -18,33 +15,8 @@ const LISTED_FLAGS = new Set(["retraction_candidate", "non_occurrence_candidate"
 async function main() {
   const write = process.argv.includes("--write");
 
-  const news = (await findAllBySource(ISIT_SOURCE_ID)).filter((item) => decideScope(item).inScope);
-  const records = new Map((await findByNewsIds(news.map((item) => String(item._id)))).map((r) => [String(r.news_id), r]));
-  const unseeded = news.filter((item) => !records.has(String(item._id)));
-  const seeded = news.filter((item) => records.has(String(item._id)));
-
-  const results = new Map(seeded.map((item) => [String(item._id), preprocess(item)]));
-  const relations = buildRelations(
-    seeded.map((item) => {
-      const result = results.get(String(item._id))!;
-      return {
-        newsId: String(item._id),
-        articleId: records.get(String(item._id))!.article_id,
-        referencedArticleId: result.referencedArticleId,
-        isRetraction: result.flags.includes("retraction_candidate"),
-      };
-    })
-  );
-
-  const writes: PreprocessWrite[] = [];
-  let inputChanged = 0;
-  for (const item of seeded) {
-    const id = String(item._id);
-    const record = records.get(id)!;
-    const plan = planPreprocessUpdate(record, results.get(id)!, relations.get(id) ?? []);
-    if (plan.inputChanged) inputChanged++;
-    if (plan.changed) writes.push({ newsId: id, expectedFingerprint: record.input.fingerprint, set: plan.set });
-  }
+  const plan = await planPreprocessAll();
+  const { news, seeded, unseeded, results, relations, writes, inputChanged } = plan;
 
   console.log(`in-scope news: ${news.length}, seeded: ${seeded.length}, not seeded (run isit:seed): ${unseeded.length}`);
   console.log(`would change: ${writes.length}, input changed since last run: ${inputChanged}`);
@@ -73,7 +45,7 @@ async function main() {
     console.log("\ndry run: nothing written; re-run with --write to apply");
     return;
   }
-  const written = await applyPreprocess(writes);
+  const { written } = await preprocessAll(plan);
   console.log(`\nwritten: ${written}/${writes.length}${written < writes.length ? " (others changed concurrently; re-run)" : ""}`);
 }
 

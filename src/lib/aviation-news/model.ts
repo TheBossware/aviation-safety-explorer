@@ -30,10 +30,15 @@ const AviationNewsSchema = new Schema<AviationNews>(
     classification_reasoning: String,
     rule_category: String,
     rule_severity: String,
-    fr_type: String,
-    is_proposed: Boolean,
-    effective_on: Date,
     content_note: String,
+    // No default: a missing field means "not checked yet", unlike an empty list.
+    airlines: { type: [String], default: undefined },
+    airline_roles: {
+      type: [new Schema({ name: String, role: { type: String, enum: ["operator", "on_behalf_of", "subject"] } }, { _id: false })],
+      default: undefined,
+    },
+    airlines_extracted_by: String,
+    airlines_extracted_at: Date,
   },
   { collection: "aviation_news" }
 );

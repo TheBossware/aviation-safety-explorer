@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { toArray, toSingle, type SearchParams } from "@/lib/shared/search-params";
 
 /** Filters preserved as hidden fields so the search box doesn't reset them on submit. */
-const PRESERVE_KEYS = ["category", "severity", "source", "range", "aircraft", "tag"] as const;
+const PRESERVE_KEYS = ["category", "severity", "source", "airline", "range", "aircraft", "tag"] as const;
 
 export function IncidentHeader({ searchParams }: { searchParams: SearchParams }) {
   const router = useRouter();
@@ -51,7 +51,7 @@ export function IncidentHeader({ searchParams }: { searchParams: SearchParams })
           name="q"
           defaultValue={toSingle(searchParams.q)}
           placeholder="Search by aircraft, flight, source, tag..."
-          className="h-10 pl-9"
+          className="h-10 bg-card dark:bg-card pl-9"
         />
       </form>
     </div>

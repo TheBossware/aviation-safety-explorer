@@ -12,29 +12,25 @@ import {
 import { SEVERITY_LABELS, SEVERITY_VALUES } from "@/lib/shared/types";
 import { toArray, toSingle, withParam, type SearchParams } from "@/lib/shared/search-params";
 import type { Source } from "@/lib/sources/types";
-
-const DATE_RANGES = [
-  { value: "7d", label: "Last 7 days" },
-  { value: "30d", label: "Last 30 days" },
-  { value: "90d", label: "Last 90 days" },
-  { value: "6m", label: "Last 6 months" },
-  { value: "1y", label: "Last 1 year" },
-  { value: "All", label: "All time" },
-];
-
-const SORT_OPTIONS = [
-  { value: "desc", label: "Newest first" },
-  { value: "asc", label: "Oldest first" },
-];
+import type { AirlineCount } from "@/lib/aviation-news/repository";
+import {
+  DATE_RANGE_LABELS,
+  DATE_RANGES,
+  selectLabel,
+  SORT_LABELS,
+  SORT_OPTIONS,
+} from "@/components/aviation-news/filter-options";
 
 interface FilterToolbarProps {
   categories: string[];
   sources: Source[];
+  airlines: AirlineCount[];
   searchParams: SearchParams;
 }
 
-export function FilterToolbar({ categories, sources, searchParams }: FilterToolbarProps) {
+export function FilterToolbar({ categories, sources, airlines, searchParams }: FilterToolbarProps) {
   const router = useRouter();
+  const sourceLabels = Object.fromEntries(sources.map((s) => [s.id, s.name]));
 
   function navigate(key: string, value: string | null) {
     router.push(`/aviation-news?${withParam(searchParams, key, value ?? "All")}`);
@@ -46,8 +42,8 @@ export function FilterToolbar({ categories, sources, searchParams }: FilterToolb
         value={toSingle(searchParams.category) ?? "All"}
         onValueChange={(v) => navigate("category", v)}
       >
-        <SelectTrigger className="h-9 w-[170px]">
-          <SelectValue placeholder="All Categories" />
+        <SelectTrigger className="h-9 bg-card dark:bg-card w-[170px]">
+          <SelectValue>{selectLabel("Categories")}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="All">All Categories</SelectItem>
@@ -63,8 +59,8 @@ export function FilterToolbar({ categories, sources, searchParams }: FilterToolb
         value={toArray(searchParams.severity)[0] ?? "All"}
         onValueChange={(v) => navigate("severity", v)}
       >
-        <SelectTrigger className="h-9 w-[156px]">
-          <SelectValue placeholder="All Severities" />
+        <SelectTrigger className="h-9 bg-card dark:bg-card w-[156px]">
+          <SelectValue>{selectLabel("Severities", SEVERITY_LABELS)}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="All">All Severities</SelectItem>
@@ -80,8 +76,8 @@ export function FilterToolbar({ categories, sources, searchParams }: FilterToolb
         value={toSingle(searchParams.source) ?? "All"}
         onValueChange={(v) => navigate("source", v)}
       >
-        <SelectTrigger className="h-9 w-[156px]">
-          <SelectValue placeholder="All Sources" />
+        <SelectTrigger className="h-9 bg-card dark:bg-card w-[156px]">
+          <SelectValue>{selectLabel("Sources", sourceLabels)}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="All">All Sources</SelectItem>
@@ -94,11 +90,28 @@ export function FilterToolbar({ categories, sources, searchParams }: FilterToolb
       </Select>
 
       <Select
+        value={toSingle(searchParams.airline) ?? "All"}
+        onValueChange={(v) => navigate("airline", v)}
+      >
+        <SelectTrigger className="h-9 bg-card dark:bg-card w-[180px]">
+          <SelectValue>{selectLabel("Airlines")}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="All">All Airlines</SelectItem>
+          {airlines.map((airline) => (
+            <SelectItem key={airline.name} value={airline.name}>
+              {airline.name} ({airline.count})
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
         value={toSingle(searchParams.range) ?? "All"}
         onValueChange={(v) => navigate("range", v)}
       >
-        <SelectTrigger className="h-9 w-[156px]">
-          <SelectValue placeholder="All time" />
+        <SelectTrigger className="h-9 bg-card dark:bg-card w-[156px]">
+          <SelectValue>{selectLabel("Date range", DATE_RANGE_LABELS)}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           {DATE_RANGES.map((range) => (
@@ -113,8 +126,8 @@ export function FilterToolbar({ categories, sources, searchParams }: FilterToolb
         value={toSingle(searchParams.sort) ?? "desc"}
         onValueChange={(v) => navigate("sort", v)}
       >
-        <SelectTrigger className="h-9 w-[156px]">
-          <SelectValue placeholder="Newest first" />
+        <SelectTrigger className="h-9 bg-card dark:bg-card w-[156px]">
+          <SelectValue>{selectLabel("Newest first", SORT_LABELS)}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           {SORT_OPTIONS.map((option) => (

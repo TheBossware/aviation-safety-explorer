@@ -4,14 +4,16 @@ import { SlidersHorizontal } from "lucide-react";
 import { FilterForm } from "@/components/aviation-news/filter-form";
 import type { SearchParams } from "@/lib/shared/search-params";
 import type { Source } from "@/lib/sources/types";
+import type { AirlineCount } from "@/lib/aviation-news/repository";
 
 interface FilterPanelDesktopProps {
   categories: string[];
   sources: Source[];
+  airlines: AirlineCount[];
   searchParams: SearchParams;
 }
 
-export function FilterPanelDesktop({ categories, sources, searchParams }: FilterPanelDesktopProps) {
+export function FilterPanelDesktop({ categories, sources, airlines, searchParams }: FilterPanelDesktopProps) {
   return (
     <aside className="hidden w-[290px] shrink-0 border-l bg-card p-5 lg:block">
       <div className="mb-5 flex items-center justify-between">
@@ -30,6 +32,7 @@ export function FilterPanelDesktop({ categories, sources, searchParams }: Filter
         idPrefix="desktop"
         categories={categories}
         sources={sources}
+        airlines={airlines}
         searchParams={searchParams}
       />
     </aside>

@@ -1,5 +1,18 @@
 import type { Severity } from "@/lib/shared/types";
 
+/**
+ * How an airline relates to a news item:
+ * - operator: operates the aircraft involved (two operators = two airlines' aircraft involved)
+ * - on_behalf_of: the airline the operator flew for ("... on behalf of Ryanair")
+ * - subject: the airline a non-occurrence item is about (orders, deliveries, services)
+ */
+export type AirlineRole = "operator" | "on_behalf_of" | "subject";
+
+export interface AirlineMention {
+  name: string;
+  role: AirlineRole;
+}
+
 export interface AviationNews {
   _id: string;
   source_id: string;
@@ -24,8 +37,15 @@ export interface AviationNews {
   classification_reasoning: string | null;
   rule_category: string | null;
   rule_severity: string | null;
-  fr_type: string | null;
-  is_proposed: boolean | null;
-  effective_on: string | Date | null;
   content_note: string | null;
+  /**
+   * Airlines the item is about: the operator first, then any airline it flew on behalf of
+   * (e.g. ["Malta Air", "Ryanair"]). `[]` = checked, none named; missing = not checked yet
+   * (items ingested after the extraction ran).
+   */
+  airlines?: string[];
+  /** Same airlines with their role; `airlines` stays the flat list used for filtering. */
+  airline_roles?: AirlineMention[];
+  airlines_extracted_by?: string;
+  airlines_extracted_at?: string | Date;
 }

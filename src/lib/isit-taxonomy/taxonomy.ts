@@ -37,6 +37,8 @@ export interface IsitTaxonomy {
   router: IsitRouterParentLevel[];
   /** Assignable codes only. */
   entries: IsitIndexEntry[];
+  /** Every node, level-1 groups included, parents before children, in source order. */
+  allNodes(): IsitNode[];
   getNode(code: string): IsitNode | undefined;
   getEntry(code: string): IsitIndexEntry | undefined;
   /** Nearest-first chain up to (and including) the level-1 group. */
@@ -62,6 +64,7 @@ function l2Node(parent: IsitRouterParentLevel, eventType: IsitRouterEventType, s
     level: 2,
     name: eventType.name,
     label: `${parent.name} > ${eventType.name}`,
+    definition: eventType.definition,
     dimension: eventType.dimension,
     parentCode: parent.code,
     selectable,
@@ -114,6 +117,7 @@ function build(version: string): IsitTaxonomy {
       level: 1,
       name: parent.name,
       label: parent.name,
+      definition: null,
       dimension: parent.dimension,
       parentCode: null,
       selectable: false,
@@ -131,6 +135,7 @@ function build(version: string): IsitTaxonomy {
       level: entry.level,
       name: entry.name,
       label: entry.label,
+      definition: entry.definition,
       dimension: entry.dimension,
       parentCode: entry.parentCode,
       selectable: true,
@@ -219,6 +224,7 @@ function build(version: string): IsitTaxonomy {
     version,
     router: routerFile.parentLevels,
     entries,
+    allNodes: () => [...nodes.values()],
     getNode: (code) => nodes.get(code),
     getEntry: (code) => entryByCode.get(code),
     ancestors,
@@ -239,4 +245,22 @@ export function loadIsitTaxonomy(version: string = DEFAULT_ISIT_VERSION): IsitTa
     cache.set(version, taxonomy);
   }
   return taxonomy;
+}
+
+/** [code, name, parentCode, level, dimension, selectable (0/1), definition] */
+export type IsitTreeRow = [string, string, string | null, number, IsitDimension, 0 | 1, string | null];
+
+/** Compact, client-safe form of the whole taxonomy (~270 KB, ~60 KB gzipped). */
+export interface IsitTreePayload {
+  version: string;
+  rows: IsitTreeRow[];
+}
+
+export function toTreePayload(taxonomy: IsitTaxonomy): IsitTreePayload {
+  return {
+    version: taxonomy.version,
+    rows: taxonomy
+      .allNodes()
+      .map((n) => [n.code, n.name, n.parentCode, n.level, n.dimension, n.selectable ? 1 : 0, n.definition]),
+  };
 }

@@ -211,8 +211,11 @@ function sameTime(a: Date | string | null | undefined, b: Date | null): boolean 
 export function planPreprocessUpdate(current: PlanCurrent, result: PreprocessResult, relations: IsitRelation[]): PreprocessPlan {
   const inputChanged = current.input.fingerprint !== null && current.input.fingerprint !== result.fingerprint;
 
+  // Keep the stored order (other stages' flags interleave with ours) and only add or drop our own.
   const owned = new Set<string>(PREPROCESS_FLAGS);
-  const flags = [...current.flags.filter((flag) => !owned.has(flag)), ...result.flags];
+  const wanted = new Set<string>(result.flags);
+  const flags = current.flags.filter((flag) => !owned.has(flag) || wanted.has(flag));
+  for (const flag of result.flags) if (!flags.includes(flag)) flags.push(flag);
   if (inputChanged && !flags.includes(INPUT_CHANGED_FLAG)) flags.push(INPUT_CHANGED_FLAG);
 
   let workflowStatus = current.workflow_status;

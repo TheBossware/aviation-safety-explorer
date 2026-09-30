@@ -15,16 +15,14 @@ export const ISIT_SOURCE_HOST = "avherald.com";
  * - not_applicable        not an occurrence (e.g. "News: AVH was sued")
  * - insufficient_evidence an occurrence, but the text supports no code, not even at level 2
  * - revoked               the source withdrew the claim; no event codes are asserted
- * - duplicate             another record is the canonical one (`duplicate_of`); set by a human only
  */
-export type IsitOutcome = "classified" | "not_applicable" | "insufficient_evidence" | "revoked" | "duplicate";
+export type IsitOutcome = "classified" | "not_applicable" | "insufficient_evidence" | "revoked";
 
 export const ISIT_OUTCOME_VALUES: readonly IsitOutcome[] = [
   "classified",
   "not_applicable",
   "insufficient_evidence",
   "revoked",
-  "duplicate",
 ];
 
 /**
@@ -106,7 +104,6 @@ export interface IsitAiSnapshot {
 export interface IsitFinal {
   outcome: IsitOutcome;
   codes: IsitCodeAssignment[];
-  duplicate_of: ObjectId | string | null;
   taxonomy_version: string;
   /** Unverified until auth exists: whatever name the reviewer entered. */
   approved_by: string;
@@ -151,7 +148,16 @@ export interface IsitSuggestion {
   /** Raw per-stage model output and validation results, for audit and evaluation. */
   stages: Record<string, unknown>;
   error: string | null;
-  usage: { input_tokens: number; output_tokens: number } | null;
+  /**
+   * Tokens billed for the run, summed over its stages. Cache fields exist on suggestions created
+   * after 2026-09-29 ~09:30 UTC; older ones only have input/output (their cache reads are missing).
+   */
+  usage: {
+    input_tokens: number;
+    output_tokens: number;
+    cache_read_input_tokens?: number;
+    cache_creation_input_tokens?: number;
+  } | null;
   created_at?: Date | string;
 }
 

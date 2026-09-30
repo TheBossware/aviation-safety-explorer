@@ -18,26 +18,22 @@ import { SEVERITY_DOT_COLOR } from "@/components/aviation-news/severity-badge";
 import { SEVERITY_LABELS, SEVERITY_VALUES } from "@/lib/shared/types";
 import { toArray, toSingle, type SearchParams } from "@/lib/shared/search-params";
 import type { Source } from "@/lib/sources/types";
-
-const DATE_RANGES = [
-  { value: "7d", label: "Last 7 days" },
-  { value: "30d", label: "Last 30 days" },
-  { value: "90d", label: "Last 90 days" },
-  { value: "6m", label: "Last 6 months" },
-  { value: "1y", label: "Last 1 year" },
-  { value: "All", label: "All time" },
-];
-
-const SORT_OPTIONS = [
-  { value: "desc", label: "Newest first" },
-  { value: "asc", label: "Oldest first" },
-];
+import type { AirlineCount } from "@/lib/aviation-news/repository";
+import {
+  DATE_RANGE_LABELS,
+  DATE_RANGES,
+  selectLabel,
+  SORT_LABELS,
+  SORT_OPTIONS,
+} from "@/components/aviation-news/filter-options";
 
 interface FilterFormProps {
   /** Distinguishes ids between the desktop aside and mobile sheet instances. */
   idPrefix: string;
   categories: string[];
   sources: Source[];
+  /** Airlines named in the news, with item counts. */
+  airlines: AirlineCount[];
   searchParams: SearchParams;
   /** Called right after navigating, e.g. to close the mobile sheet. */
   onSubmitted?: () => void;
@@ -47,11 +43,13 @@ export function FilterForm({
   idPrefix,
   categories,
   sources,
+  airlines,
   searchParams,
   onSubmitted,
 }: FilterFormProps) {
   const router = useRouter();
   const selectedSeverities = toArray(searchParams.severity);
+  const sourceLabels = Object.fromEntries(sources.map((s) => [s.id, s.name]));
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     // Intercept so this goes through the client router (shows loading.tsx)
@@ -79,6 +77,7 @@ export function FilterForm({
         <Input
           id={`${idPrefix}-q`}
           name="q"
+          className="bg-card dark:bg-card"
           defaultValue={toSingle(searchParams.q)}
           placeholder="Search by aircraft, flight, source, tag..."
         />
@@ -87,8 +86,8 @@ export function FilterForm({
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${idPrefix}-category`}>Category</Label>
         <Select name="category" defaultValue={toSingle(searchParams.category) ?? "All"}>
-          <SelectTrigger id={`${idPrefix}-category`} className="w-full">
-            <SelectValue placeholder="All Categories" />
+          <SelectTrigger id={`${idPrefix}-category`} className="w-full bg-card dark:bg-card">
+            <SelectValue>{selectLabel("All categories")}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="All">All Categories</SelectItem>
@@ -124,8 +123,8 @@ export function FilterForm({
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${idPrefix}-source`}>Source</Label>
         <Select name="source" defaultValue={toSingle(searchParams.source) ?? "All"}>
-          <SelectTrigger id={`${idPrefix}-source`} className="w-full">
-            <SelectValue placeholder="All Sources" />
+          <SelectTrigger id={`${idPrefix}-source`} className="w-full bg-card dark:bg-card">
+            <SelectValue>{selectLabel("All sources", sourceLabels)}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="All">All Sources</SelectItem>
@@ -139,10 +138,27 @@ export function FilterForm({
       </div>
 
       <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`${idPrefix}-airline`}>Airline</Label>
+        <Select name="airline" defaultValue={toSingle(searchParams.airline) ?? "All"}>
+          <SelectTrigger id={`${idPrefix}-airline`} className="w-full bg-card dark:bg-card">
+            <SelectValue>{selectLabel("All airlines")}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All Airlines</SelectItem>
+            {airlines.map((airline) => (
+              <SelectItem key={airline.name} value={airline.name}>
+                {airline.name} ({airline.count})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${idPrefix}-range`}>Date Range</Label>
         <Select name="range" defaultValue={toSingle(searchParams.range) ?? "All"}>
-          <SelectTrigger id={`${idPrefix}-range`} className="w-full">
-            <SelectValue placeholder="All time" />
+          <SelectTrigger id={`${idPrefix}-range`} className="w-full bg-card dark:bg-card">
+            <SelectValue>{selectLabel("All time", DATE_RANGE_LABELS)}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {DATE_RANGES.map((range) => (
@@ -157,8 +173,8 @@ export function FilterForm({
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${idPrefix}-sort`}>Sort by Published Date</Label>
         <Select name="sort" defaultValue={toSingle(searchParams.sort) ?? "desc"}>
-          <SelectTrigger id={`${idPrefix}-sort`} className="w-full">
-            <SelectValue placeholder="Newest first" />
+          <SelectTrigger id={`${idPrefix}-sort`} className="w-full bg-card dark:bg-card">
+            <SelectValue>{selectLabel("Newest first", SORT_LABELS)}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {SORT_OPTIONS.map((option) => (
@@ -175,6 +191,7 @@ export function FilterForm({
         <Input
           id={`${idPrefix}-aircraft`}
           name="aircraft"
+          className="bg-card dark:bg-card"
           defaultValue={toSingle(searchParams.aircraft)}
           placeholder="e.g. B788, UA-108"
         />
@@ -185,6 +202,7 @@ export function FilterForm({
         <Input
           id={`${idPrefix}-tag`}
           name="tag"
+          className="bg-card dark:bg-card"
           defaultValue={toSingle(searchParams.tag)}
           placeholder="e.g. diversion, turbulence"
         />
@@ -194,6 +212,7 @@ export function FilterForm({
         <Button type="submit">Apply filters</Button>
         <Button
           variant="outline"
+          className="bg-card dark:bg-card"
           nativeButton={false}
           onClick={() => onSubmitted?.()}
           render={<Link href="/aviation-news" />}

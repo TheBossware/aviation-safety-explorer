@@ -8,25 +8,18 @@
  */
 import mongoose from "mongoose";
 
-import { findAllBySource } from "@/lib/aviation-news/repository";
-import { ensureIndexes, ensurePending, findExistingNewsIds } from "@/lib/isit-classification/repository";
-import { decideScope } from "@/lib/isit-classification/scope";
+import { planSeed, seedPending } from "@/lib/isit-classification/jobs";
+import { findExistingNewsIds } from "@/lib/isit-classification/repository";
 import { ISIT_SOURCE_ID } from "@/lib/isit-classification/types";
 
 async function main() {
   const write = process.argv.includes("--write");
 
-  const news = await findAllBySource(ISIT_SOURCE_ID);
-  const inScope = [];
-  const skipped: string[] = [];
-  for (const item of news) {
-    const scope = decideScope(item);
-    if (scope.inScope) inScope.push(item);
-    else skipped.push(`${item._id}: ${scope.reason}`);
-  }
+  const plan = await planSeed();
+  const { news, inScope, skipped } = plan;
 
   console.log(`${ISIT_SOURCE_ID} news: ${news.length}, in scope: ${inScope.length}, skipped: ${skipped.length}`);
-  for (const line of skipped) console.log(`  skipped ${line}`);
+  for (const { id, reason } of skipped) console.log(`  skipped ${id}: ${reason}`);
 
   if (!write) {
     const existing = await findExistingNewsIds(inScope.map((item) => String(item._id)));
@@ -35,8 +28,7 @@ async function main() {
     return;
   }
 
-  await ensureIndexes();
-  const result = await ensurePending(inScope);
+  const result = await seedPending(plan);
   console.log(`inserted ${result.inserted}, already present ${result.existing}`);
 }
 

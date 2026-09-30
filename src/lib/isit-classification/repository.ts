@@ -3,9 +3,17 @@ import { Types } from "mongoose";
 import type { AviationNews } from "@/lib/aviation-news/types";
 import { dbConnect } from "@/lib/mongodb";
 import { IsitClassificationModel, IsitReviewEventModel, IsitSuggestionModel } from "./model";
-import type { PreprocessPlan } from "./preprocess";
+import { INPUT_CHANGED_FLAG, type PreprocessPlan } from "./preprocess";
+import type { ReviewEventDraft } from "./review";
 import { decideScope } from "./scope";
-import type { IsitClassification, IsitSuggestion, IsitWorkflowStatus } from "./types";
+import type {
+  IsitClassification,
+  IsitFinal,
+  IsitOutcome,
+  IsitReviewEvent,
+  IsitSuggestion,
+  IsitWorkflowStatus,
+} from "./types";
 
 function serialize(doc: IsitClassification): IsitClassification {
   return { ...doc, _id: String(doc._id), news_id: String(doc.news_id) };
@@ -98,14 +106,6 @@ export async function countByStatus(): Promise<Partial<Record<IsitWorkflowStatus
   await dbConnect();
   const rows = await IsitClassificationModel.aggregate<{ _id: IsitWorkflowStatus; n: number }>([
     { $group: { _id: "$workflow_status", n: { $sum: 1 } } },
-  ]);
-  return Object.fromEntries(rows.map((row) => [row._id, row.n]));
-}
-
-export async function countBySource(): Promise<Record<string, number>> {
-  await dbConnect();
-  const rows = await IsitClassificationModel.aggregate<{ _id: string; n: number }>([
-    { $group: { _id: "$source_id", n: { $sum: 1 } } },
   ]);
   return Object.fromEntries(rows.map((row) => [row._id, row.n]));
 }
@@ -248,4 +248,106 @@ export async function findAllClassifications(): Promise<IsitClassification[]> {
   await dbConnect();
   const docs = await IsitClassificationModel.find({}).lean<IsitClassification[]>();
   return docs.map(serialize);
+}
+
+export type DashboardClassification = Pick<IsitClassification, "workflow_status" | "flags" | "ai" | "final">;
+
+/** Every record with only what the dashboard aggregates (no input snapshot). */
+export async function findForDashboard(): Promise<DashboardClassification[]> {
+  await dbConnect();
+  return IsitClassificationModel.find({}, { _id: 0, workflow_status: 1, flags: 1, ai: 1, final: 1 }).lean<
+    DashboardClassification[]
+  >();
+}
+
+export interface ReviewListRow {
+  newsId: string;
+  title: string;
+  publishedAt: Date | null;
+  workflowStatus: IsitWorkflowStatus;
+  aiOutcome: IsitOutcome | null;
+  aiCodeCount: number;
+  finalOutcome: IsitOutcome | null;
+  flags: string[];
+}
+
+/** Review queue joined with the news titles, newest post first. */
+export async function findForReview(filter: { status?: IsitWorkflowStatus } = {}): Promise<ReviewListRow[]> {
+  await dbConnect();
+  const rows = await IsitClassificationModel.aggregate<{
+    news_id: Types.ObjectId;
+    workflow_status: IsitWorkflowStatus;
+    flags: string[];
+    ai: IsitClassification["ai"];
+    final: IsitClassification["final"];
+    news: Array<{ title: string; published_at: Date | null }>;
+  }>([
+    { $match: filter.status ? { workflow_status: filter.status } : {} },
+    { $lookup: { from: "aviation_news", localField: "news_id", foreignField: "_id", as: "news" } },
+    { $project: { news_id: 1, workflow_status: 1, flags: 1, ai: 1, final: 1, "news.title": 1, "news.published_at": 1 } },
+    { $sort: { "news.published_at": -1 } },
+  ]);
+  return rows.map((row) => ({
+    newsId: String(row.news_id),
+    title: row.news[0]?.title ?? "(news item missing)",
+    publishedAt: row.news[0]?.published_at ?? null,
+    workflowStatus: row.workflow_status,
+    aiOutcome: row.ai?.outcome ?? null,
+    aiCodeCount: row.ai?.codes.length ?? 0,
+    finalOutcome: row.final?.outcome ?? null,
+    flags: row.flags,
+  }));
+}
+
+export async function findSuggestionById(id: string): Promise<IsitSuggestion | null> {
+  await dbConnect();
+  return IsitSuggestionModel.findById(id).lean<IsitSuggestion>();
+}
+
+export async function findReviewEvents(newsId: string): Promise<IsitReviewEvent[]> {
+  await dbConnect();
+  return IsitReviewEventModel.find({ news_id: new Types.ObjectId(newsId) })
+    .sort({ at: -1 })
+    .lean<IsitReviewEvent[]>();
+}
+
+/**
+ * Stores a human decision: the only writer of `final`. Clears `input_changed` (the reviewer saw
+ * the current input) and appends the history events.
+ */
+export async function saveReview(newsId: string, final: IsitFinal, events: ReviewEventDraft[]): Promise<boolean> {
+  await dbConnect();
+  const id = new Types.ObjectId(newsId);
+  const toObjectId = (value: unknown) => (value ? new Types.ObjectId(String(value)) : null);
+  const now = new Date();
+
+  const result = await IsitClassificationModel.updateOne(
+    { news_id: id },
+    {
+      $set: {
+        final,
+        workflow_status: "approved",
+        updated_at: now,
+      },
+      $pull: { flags: INPUT_CHANGED_FLAG },
+    },
+    { timestamps: false }
+  );
+  if (result.matchedCount !== 1) return false;
+
+  await IsitReviewEventModel.insertMany(
+    events.map((event) => ({ ...event, news_id: id, suggestion_id: toObjectId(event.suggestion_id), at: now }))
+  );
+  return true;
+}
+
+export type SuggestionUsageRow = Pick<IsitSuggestion, "model" | "status" | "usage" | "created_at">;
+
+/** Token usage of every AI run, for cost reporting. */
+export async function findSuggestionUsage(): Promise<SuggestionUsageRow[]> {
+  await dbConnect();
+  return IsitSuggestionModel.find({})
+    .select({ model: 1, status: 1, usage: 1, created_at: 1 })
+    .sort({ created_at: 1 })
+    .lean<SuggestionUsageRow[]>();
 }
