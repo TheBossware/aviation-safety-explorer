@@ -1,74 +1,32 @@
-import Link from "next/link";
-import { AlertTriangle, ClipboardCheck, Newspaper, Rss, Siren } from "lucide-react";
+import { ClipboardCheck, Newspaper, Rss, Siren } from "lucide-react";
 
 import { getDashboardData } from "@/lib/dashboard/dashboard";
+import type { DashboardData } from "@/lib/dashboard/types";
 import {
   ISIT_OUTCOME_VALUES,
   ISIT_WORKFLOW_STATUS_VALUES,
   OUTCOME_LABELS,
   WORKFLOW_STATUS_LABELS,
 } from "@/lib/isit-classification/types";
-import { formatDate, formatDateUtc } from "@/lib/shared/format-date";
-import { SeverityBadge } from "@/components/aviation-news/severity-badge";
+import { formatDateUtc } from "@/lib/shared/format-date";
 import { BarList } from "@/components/dashboard/bar-list";
+import { ChartCard } from "@/components/dashboard/chart-card";
+import { DatabaseUnavailable } from "@/components/dashboard/database-unavailable";
+import { RecentNewsList } from "@/components/dashboard/recent-news-list";
 import { SeverityBySource } from "@/components/dashboard/severity-by-source";
 import { SeverityLegend } from "@/components/dashboard/severity-legend";
 import { Meter, StatCard } from "@/components/dashboard/stat-card";
 import { WeeklySeverityChart } from "@/components/dashboard/weekly-severity-chart";
 import { DetailsButton } from "@/components/nav-buttons";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
-function ChartCard({
-  title,
-  description,
-  action,
-  children,
-  className,
-}: {
-  title: string;
-  description: React.ReactNode;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <Card className={className}>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-col gap-1">
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
-          </div>
-          {action}
-        </div>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
-  );
-}
-
 export default async function DashboardPage() {
-  let data: Awaited<ReturnType<typeof getDashboardData>>;
+  let data: DashboardData;
   try {
     data = await getDashboardData();
   } catch {
-    return (
-      <Card className="border-destructive/30">
-        <CardHeader className="flex flex-row items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
-            <AlertTriangle className="size-5" />
-          </div>
-          <div>
-            <CardTitle>Database unavailable</CardTitle>
-            <CardDescription>
-              Could not connect to MongoDB. Set MONGODB_URI in .env.local and make sure the database is reachable.
-            </CardDescription>
-          </div>
-        </CardHeader>
-      </Card>
-    );
+    return <DatabaseUnavailable />;
   }
 
   const { news, weekly, sources, categories, airlines, recentHigh, isit } = data;
@@ -206,23 +164,7 @@ export default async function DashboardPage() {
           description="Most recently published high and critical severity items."
           action={<DetailsButton href="/aviation-news?severity=HIGH&severity=CRITICAL">All</DetailsButton>}
         >
-          {recentHigh.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No high or critical items.</p>
-          ) : (
-            <ul className="flex flex-col divide-y divide-border">
-              {recentHigh.map((item) => (
-                <li key={String(item._id)} className="flex items-start justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
-                  <Link href={`/aviation-news/${item._id}`} className="flex min-w-0 flex-col gap-0.5 hover:underline">
-                    <span className="line-clamp-2 text-sm font-medium">{item.title}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {item.source_name} · {formatDate(item.published_at)}
-                    </span>
-                  </Link>
-                  <SeverityBadge severity={item.severity} className="shrink-0" />
-                </li>
-              ))}
-            </ul>
-          )}
+          <RecentNewsList items={recentHigh} emptyMessage="No high or critical items." />
         </ChartCard>
       </div>
     </div>
