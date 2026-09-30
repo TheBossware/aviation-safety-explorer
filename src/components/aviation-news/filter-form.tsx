@@ -7,37 +7,29 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { SEVERITY_DOT_COLOR } from "@/components/aviation-news/severity-badge";
+import { ALL } from "@/lib/aviation-news/filters";
 import { SEVERITY_LABELS, SEVERITY_VALUES } from "@/lib/shared/types";
 import { toArray, toSingle, type SearchParams } from "@/lib/shared/search-params";
-import type { Source } from "@/lib/sources/types";
-import type { AirlineCount } from "@/lib/aviation-news/types";
-import { DATE_RANGES } from "@/lib/aviation-news/filters";
 import {
-  DATE_RANGE_LABELS,
-  selectLabel,
-  SORT_LABELS,
+  airlineOptions,
+  categoryOptions,
+  DATE_RANGE_OPTIONS,
   SORT_OPTIONS,
+  sourceOptions,
+  type FilterChoices,
 } from "@/components/aviation-news/filter-options";
+import { FilterSelect } from "@/components/aviation-news/filter-select";
 
-interface FilterFormProps {
+interface FilterFormProps extends FilterChoices {
   /** Distinguishes ids between the desktop aside and mobile sheet instances. */
   idPrefix: string;
-  categories: string[];
-  sources: Source[];
-  /** Airlines named in the news, with item counts. */
-  airlines: AirlineCount[];
   searchParams: SearchParams;
   /** Called right after navigating, e.g. to close the mobile sheet. */
   onSubmitted?: () => void;
 }
+
+const SELECT_TRIGGER = "w-full bg-card dark:bg-card";
 
 export function FilterForm({
   idPrefix,
@@ -49,7 +41,6 @@ export function FilterForm({
 }: FilterFormProps) {
   const router = useRouter();
   const selectedSeverities = toArray(searchParams.severity);
-  const sourceLabels = Object.fromEntries(sources.map((s) => [s.id, s.name]));
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     // Intercept so this goes through the client router (shows loading.tsx)
@@ -57,7 +48,7 @@ export function FilterForm({
     event.preventDefault();
     const params = new URLSearchParams();
     for (const [key, value] of new FormData(event.currentTarget)) {
-      if (typeof value === "string" && value && value !== "All") {
+      if (typeof value === "string" && value && value !== ALL) {
         params.append(key, value);
       }
     }
@@ -85,19 +76,14 @@ export function FilterForm({
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${idPrefix}-category`}>Category</Label>
-        <Select name="category" defaultValue={toSingle(searchParams.category) ?? "All"}>
-          <SelectTrigger id={`${idPrefix}-category`} className="w-full bg-card dark:bg-card">
-            <SelectValue>{selectLabel("All categories")}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">All Categories</SelectItem>
-            {categories.map((category) => (
-              <SelectItem key={category} value={category}>
-                {category}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <FilterSelect
+          name="category"
+          defaultValue={toSingle(searchParams.category) ?? ALL}
+          options={categoryOptions(categories)}
+          placeholder="All categories"
+          triggerId={`${idPrefix}-category`}
+          triggerClassName={SELECT_TRIGGER}
+        />
       </div>
 
       <div className="flex flex-col gap-2">
@@ -122,68 +108,50 @@ export function FilterForm({
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${idPrefix}-source`}>Source</Label>
-        <Select name="source" defaultValue={toSingle(searchParams.source) ?? "All"}>
-          <SelectTrigger id={`${idPrefix}-source`} className="w-full bg-card dark:bg-card">
-            <SelectValue>{selectLabel("All sources", sourceLabels)}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">All Sources</SelectItem>
-            {sources.map((source) => (
-              <SelectItem key={source.id} value={source.id}>
-                {source.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <FilterSelect
+          name="source"
+          defaultValue={toSingle(searchParams.source) ?? ALL}
+          options={sourceOptions(sources)}
+          placeholder="All sources"
+          triggerId={`${idPrefix}-source`}
+          triggerClassName={SELECT_TRIGGER}
+        />
       </div>
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${idPrefix}-airline`}>Airline</Label>
-        <Select name="airline" defaultValue={toSingle(searchParams.airline) ?? "All"}>
-          <SelectTrigger id={`${idPrefix}-airline`} className="w-full bg-card dark:bg-card">
-            <SelectValue>{selectLabel("All airlines")}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">All Airlines</SelectItem>
-            {airlines.map((airline) => (
-              <SelectItem key={airline.name} value={airline.name}>
-                {airline.name} ({airline.count})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <FilterSelect
+          name="airline"
+          defaultValue={toSingle(searchParams.airline) ?? ALL}
+          options={airlineOptions(airlines)}
+          placeholder="All airlines"
+          triggerId={`${idPrefix}-airline`}
+          triggerClassName={SELECT_TRIGGER}
+        />
       </div>
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${idPrefix}-range`}>Date Range</Label>
-        <Select name="range" defaultValue={toSingle(searchParams.range) ?? "All"}>
-          <SelectTrigger id={`${idPrefix}-range`} className="w-full bg-card dark:bg-card">
-            <SelectValue>{selectLabel("All time", DATE_RANGE_LABELS)}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {DATE_RANGES.map((range) => (
-              <SelectItem key={range.value} value={range.value}>
-                {range.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <FilterSelect
+          name="range"
+          defaultValue={toSingle(searchParams.range) ?? ALL}
+          options={DATE_RANGE_OPTIONS}
+          placeholder="All time"
+          triggerId={`${idPrefix}-range`}
+          triggerClassName={SELECT_TRIGGER}
+        />
       </div>
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${idPrefix}-sort`}>Sort by Published Date</Label>
-        <Select name="sort" defaultValue={toSingle(searchParams.sort) ?? "desc"}>
-          <SelectTrigger id={`${idPrefix}-sort`} className="w-full bg-card dark:bg-card">
-            <SelectValue>{selectLabel("Newest first", SORT_LABELS)}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {SORT_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <FilterSelect
+          name="sort"
+          defaultValue={toSingle(searchParams.sort) ?? "desc"}
+          options={SORT_OPTIONS}
+          placeholder="Newest first"
+          triggerId={`${idPrefix}-sort`}
+          triggerClassName={SELECT_TRIGGER}
+        />
       </div>
 
       <div className="flex flex-col gap-1.5">

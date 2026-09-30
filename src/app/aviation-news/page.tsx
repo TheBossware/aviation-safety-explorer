@@ -8,6 +8,7 @@ import { FilterToolbar } from "@/components/aviation-news/filter-toolbar";
 import { MobileFiltersSheet } from "@/components/aviation-news/mobile-filters-sheet";
 import { IncidentGrid } from "@/components/aviation-news/incident-grid";
 import { FilterPanelDesktop } from "@/components/aviation-news/filter-panel-desktop";
+import type { FilterChoices } from "@/components/aviation-news/filter-options";
 import { Pagination } from "@/components/aviation-news/pagination";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export default async function AviationNewsPage({ searchParams }: PageProps) {
   ]);
   const isitRecords = await isitRepository.findByNewsIds(items.map((item) => String(item._id)));
   const isitByNewsId = new Map(isitRecords.map((record) => [String(record.news_id), record]));
+  const choices: FilterChoices = { categories, sources, airlines };
 
   return (
     <div className="flex flex-1 flex-col gap-4 lg:flex-row lg:items-start lg:gap-2">
@@ -35,8 +37,8 @@ export default async function AviationNewsPage({ searchParams }: PageProps) {
         <IncidentHeader searchParams={params} />
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-4">
-          <FilterToolbar categories={categories} sources={sources} airlines={airlines} searchParams={params} />
-          <MobileFiltersSheet categories={categories} sources={sources} airlines={airlines} searchParams={params} />
+          <FilterToolbar {...choices} searchParams={params} />
+          <MobileFiltersSheet {...choices} searchParams={params} />
         </div>
 
         <IncidentGrid items={items} isitByNewsId={isitByNewsId} />
@@ -44,7 +46,7 @@ export default async function AviationNewsPage({ searchParams }: PageProps) {
         <Pagination page={page} pageSize={pageSize} total={total} searchParams={params} />
       </div>
 
-      <FilterPanelDesktop categories={categories} sources={sources} airlines={airlines} searchParams={params} />
+      <FilterPanelDesktop {...choices} searchParams={params} />
     </div>
   );
 }

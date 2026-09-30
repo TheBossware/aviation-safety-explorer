@@ -13,13 +13,9 @@ import {
 } from "@/components/ui/sheet";
 import { FilterForm } from "@/components/aviation-news/filter-form";
 import type { SearchParams } from "@/lib/shared/search-params";
-import type { Source } from "@/lib/sources/types";
-import type { AirlineCount } from "@/lib/aviation-news/types";
+import type { FilterChoices } from "@/components/aviation-news/filter-options";
 
-interface MobileFiltersSheetProps {
-  categories: string[];
-  sources: Source[];
-  airlines: AirlineCount[];
+interface MobileFiltersSheetProps extends FilterChoices {
   searchParams: SearchParams;
 }
 

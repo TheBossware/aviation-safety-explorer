@@ -3,13 +3,9 @@ import { SlidersHorizontal } from "lucide-react";
 
 import { FilterForm } from "@/components/aviation-news/filter-form";
 import type { SearchParams } from "@/lib/shared/search-params";
-import type { Source } from "@/lib/sources/types";
-import type { AirlineCount } from "@/lib/aviation-news/types";
+import type { FilterChoices } from "@/components/aviation-news/filter-options";
 
-interface FilterPanelDesktopProps {
-  categories: string[];
-  sources: Source[];
-  airlines: AirlineCount[];
+interface FilterPanelDesktopProps extends FilterChoices {
   searchParams: SearchParams;
 }
 
