@@ -3,7 +3,7 @@
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import type { WeeklyPoint } from "@/lib/dashboard-data";
+import type { WeeklyPoint } from "@/lib/dashboard/types";
 import { SEVERITY_HEX } from "@/lib/shared/severity-colors";
 import { SEVERITY_LABELS, SEVERITY_VALUES } from "@/lib/shared/types";
 

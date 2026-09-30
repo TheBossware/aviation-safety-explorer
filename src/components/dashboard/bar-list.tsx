@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import type { CountRow } from "@/lib/dashboard-data";
+import type { CountRow } from "@/lib/dashboard/types";
 import { cn } from "@/lib/utils";
 
 /**

@@ -18,7 +18,7 @@ import { SEVERITY_DOT_COLOR } from "@/components/aviation-news/severity-badge";
 import { SEVERITY_LABELS, SEVERITY_VALUES } from "@/lib/shared/types";
 import { toArray, toSingle, type SearchParams } from "@/lib/shared/search-params";
 import type { Source } from "@/lib/sources/types";
-import type { AirlineCount } from "@/lib/aviation-news/repository";
+import type { AirlineCount } from "@/lib/aviation-news/types";
 import {
   DATE_RANGE_LABELS,
   DATE_RANGES,

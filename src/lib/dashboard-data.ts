@@ -1,9 +1,7 @@
 import * as aviationNewsRepository from "@/lib/aviation-news/repository";
-import type { SourceActivity } from "@/lib/aviation-news/repository";
-import type { AviationNews } from "@/lib/aviation-news/types";
+import type { CountRow, DashboardData, WeeklyPoint } from "@/lib/dashboard/types";
 import * as isitRepository from "@/lib/isit-classification/repository";
 import { currentProposal } from "@/lib/isit-classification/review";
-import type { IsitOutcome, IsitWorkflowStatus } from "@/lib/isit-classification/types";
 import { loadIsitTaxonomy } from "@/lib/isit-taxonomy/taxonomy";
 import * as sourcesRepository from "@/lib/sources/repository";
 import { SEVERITY_VALUES, type Severity } from "@/lib/shared/types";
@@ -14,47 +12,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const HIGH_SEVERITIES: Severity[] = ["HIGH", "CRITICAL"];
 const TOP_AIRLINES = 10;
 const TOP_CODES = 8;
-
-export type WeeklyPoint = { week: string } & Record<Severity, number>;
-
-export interface CountRow {
-  key: string;
-  label: string;
-  count: number;
-  /** Secondary text, e.g. the ISIT group a code belongs to. */
-  hint?: string;
-}
-
-export interface DashboardData {
-  lastIngestAt: Date | null;
-  news: {
-    total: number;
-    fetchedLast7d: number;
-    fetchedPrev7d: number;
-    highLast30d: number;
-  };
-  weekly: WeeklyPoint[];
-  sources: {
-    /** Every source with items, plus active sources without any (total 0). */
-    rows: SourceActivity[];
-    activeCount: number;
-    /** Active sources that have never delivered an item. */
-    silent: string[];
-  };
-  categories: CountRow[];
-  airlines: CountRow[];
-  recentHigh: AviationNews[];
-  isit: {
-    total: number;
-    status: Partial<Record<IsitWorkflowStatus, number>>;
-    outcomes: Partial<Record<IsitOutcome, number>>;
-    /** Records per ISIT parent group (level 1) of their event codes. */
-    groups: CountRow[];
-    eventCodes: CountRow[];
-    contextCodes: CountRow[];
-    flags: CountRow[];
-  };
-}
 
 /** Monday 00:00 UTC of the week containing `date`. */
 function weekStart(date: Date): Date {

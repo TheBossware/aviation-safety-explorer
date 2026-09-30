@@ -10,7 +10,7 @@ import { buildIsitTree } from "@/components/isit-review/isit-tree";
 import { BackButton } from "@/components/nav-buttons";
 import { FLAG_DESCRIPTIONS, type IsitFlag } from "@/components/isit-review/flag-descriptions";
 import { TurkeyFlag, UkFlag } from "@/components/isit-review/language-flags";
-import { OUTCOME_LABELS, WORKFLOW_STATUS_LABELS } from "@/components/isit-review/status-badges";
+import { OUTCOME_LABELS, WORKFLOW_STATUS_LABELS } from "@/lib/isit-classification/types";
 
 export const metadata = { title: "ISIT Review Guide" };
 

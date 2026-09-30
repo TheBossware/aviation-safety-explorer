@@ -11,8 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { TreeView } from "@/components/isit-review/tree-view";
 import { submitReviewAction, type ReviewFormState } from "@/app/isit-review/actions";
 import { buildIsitTree, isitAncestorIds } from "@/components/isit-review/isit-tree";
-import { OUTCOME_LABELS } from "@/components/isit-review/status-badges";
-import type { IsitOutcome } from "@/lib/isit-classification/types";
+import { OUTCOME_LABELS, type IsitOutcome } from "@/lib/isit-classification/types";
 import type { IsitTreePayload } from "@/lib/isit-taxonomy/taxonomy";
 
 interface ReviewFormProps {

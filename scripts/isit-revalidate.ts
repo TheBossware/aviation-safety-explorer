@@ -9,9 +9,9 @@
 import mongoose from "mongoose";
 
 import { findAllBySource } from "@/lib/aviation-news/repository";
-import type { RouteOutput, SelectOutput } from "@/lib/isit-classification/llm/schemas";
 import { applySelection, mergeFlags, nextWorkflowStatus, PIPELINE_VERSION, type ClassifyResult } from "@/lib/isit-classification/pipeline";
 import { findAllClassifications, findSuggestionById, saveRun } from "@/lib/isit-classification/repository";
+import { readStages } from "@/lib/isit-classification/stages";
 import { ISIT_SOURCE_ID } from "@/lib/isit-classification/types";
 import { validateRoute } from "@/lib/isit-classification/validate";
 import { loadIsitTaxonomy } from "@/lib/isit-taxonomy/taxonomy";
@@ -32,9 +32,9 @@ async function main() {
   for (const record of await findAllClassifications()) {
     if (!record.ai) continue;
     const suggestion = await findSuggestionById(String(record.ai.suggestion_id));
-    const stages = suggestion?.stages as { route?: { output: RouteOutput }; select?: { output: SelectOutput } } | undefined;
+    const stages = readStages(suggestion);
     const news = newsById.get(String(record.news_id));
-    if (!suggestion || !stages?.route || !stages.select || !news) continue; // no code selection to re-check
+    if (!suggestion || !stages.route || !stages.select || !news) continue; // no code selection to re-check
     if (suggestion.pipeline_version === PIPELINE_VERSION) continue;
     if (suggestion.input_fingerprint !== record.input.fingerprint) {
       skipped++; // the input changed since: needs a real model run, not a re-validation

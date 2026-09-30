@@ -3,7 +3,15 @@ import type { QueryFilter } from "mongoose";
 import { dbConnect } from "@/lib/mongodb";
 import type { Severity } from "@/lib/shared/types";
 import { AviationNewsModel } from "./model";
-import type { AviationNews } from "./types";
+import type {
+  AirlineCount,
+  AviationNews,
+  AviationNewsFilter,
+  AviationNewsPage,
+  CategoryCount,
+  SourceActivity,
+  WeeklySeverityRow,
+} from "./types";
 
 const DEFAULT_PAGE_SIZE = 12;
 
@@ -15,33 +23,6 @@ function serialize(doc: AviationNews): AviationNews {
 /** Escapes regex metacharacters so free-text search can't be used to inject a pattern. */
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-export interface AviationNewsFilter {
-  category?: string;
-  severity?: Severity[];
-  sourceId?: string;
-  /** Only include reports published on or after this date. */
-  publishedAfter?: Date;
-  /** Free-text search across title, summary and aircraft/flight tags. */
-  q?: string;
-  /** Matches within `source_tags` (aircraft type, registration, flight number). */
-  aircraft?: string;
-  /** Matches within `tags`. */
-  tag?: string;
-  /** Exact airline name within `airlines` (operator or the airline flown for). */
-  airline?: string;
-  /** Order by `published_at`; defaults to `desc` (newest first). */
-  sort?: "asc" | "desc";
-  page?: number;
-  pageSize?: number;
-}
-
-export interface AviationNewsPage {
-  items: AviationNews[];
-  total: number;
-  page: number;
-  pageSize: number;
 }
 
 function buildQuery(filter: AviationNewsFilter): QueryFilter<AviationNews> {
@@ -111,11 +92,6 @@ export async function findAllBySource(sourceId: string): Promise<AviationNews[]>
   return docs.map(serialize);
 }
 
-export interface AirlineCount {
-  name: string;
-  count: number;
-}
-
 /** Every airline named in the news, with how many items mention it, alphabetically. */
 export async function airlineCounts(): Promise<AirlineCount[]> {
   await dbConnect();
@@ -153,13 +129,6 @@ export async function countSince(
   });
 }
 
-export interface WeeklySeverityRow {
-  /** Monday of the week (UTC), YYYY-MM-DD. */
-  week: string;
-  severity: Severity;
-  count: number;
-}
-
 /** Items per publication week (Monday-based, UTC) and severity since `since`. */
 export async function weeklySeverityCounts(since: Date): Promise<WeeklySeverityRow[]> {
   await dbConnect();
@@ -180,16 +149,6 @@ export async function weeklySeverityCounts(since: Date): Promise<WeeklySeverityR
     severity: row._id.severity,
     count: row.count,
   }));
-}
-
-export interface SourceActivity {
-  /** `source_id`, what the list's `?source=` filter takes. */
-  sourceId: string;
-  source: string;
-  total: number;
-  bySeverity: Partial<Record<Severity, number>>;
-  lastFetchedAt: Date | null;
-  lastPublishedAt: Date | null;
 }
 
 /** Per source: item count, severity mix, and when it last delivered something. Busiest first. */
@@ -232,11 +191,6 @@ export async function sourceActivity(): Promise<SourceActivity[]> {
     bySource.set(row._id.sourceId, entry);
   }
   return [...bySource.values()].sort((a, b) => b.total - a.total);
-}
-
-export interface CategoryCount {
-  category: string;
-  count: number;
 }
 
 /** Items per category, largest first. */

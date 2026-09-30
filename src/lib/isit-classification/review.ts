@@ -1,4 +1,5 @@
 import type { IsitTaxonomy } from "@/lib/isit-taxonomy/taxonomy";
+import { isOneOf } from "@/lib/shared/guards";
 import type { IsitClassification, IsitCodeAssignment, IsitFinal, IsitOutcome, IsitReviewEvent } from "./types";
 import { ISIT_OUTCOME_VALUES } from "./types";
 
@@ -42,10 +43,10 @@ export function buildReview(
 ): ReviewResult {
   const actor = submission.actor.trim();
   if (!actor) return { ok: false, error: "Enter your name as reviewer." };
-  if (!(ISIT_OUTCOME_VALUES as readonly string[]).includes(submission.outcome)) {
+  const outcome = submission.outcome;
+  if (!isOneOf(ISIT_OUTCOME_VALUES, outcome)) {
     return { ok: false, error: "Choose an outcome." };
   }
-  const outcome = submission.outcome as IsitOutcome;
   const proposal = currentProposal(record);
 
   let codes: IsitCodeAssignment[] = [];

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { SEVERITY_DOT_COLOR } from "@/components/aviation-news/severity-badge";
-import type { SourceActivity } from "@/lib/aviation-news/repository";
+import type { SourceActivity } from "@/lib/aviation-news/types";
 import { SEVERITY_LABELS, SEVERITY_VALUES } from "@/lib/shared/types";
 
 function formatShortDate(value: Date | null): string {

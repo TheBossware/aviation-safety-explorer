@@ -5,9 +5,9 @@ import { BookOpen } from "lucide-react";
 
 import * as aviationNewsRepository from "@/lib/aviation-news/repository";
 import * as isitRepository from "@/lib/isit-classification/repository";
-import type { GateOutput, RouteOutput, SelectOutput } from "@/lib/isit-classification/llm/schemas";
 import { currentProposal, REVIEWER_COOKIE } from "@/lib/isit-classification/review";
-import type { IsitCodeAssignment, IsitReviewEvent } from "@/lib/isit-classification/types";
+import { readStages } from "@/lib/isit-classification/stages";
+import { OUTCOME_LABELS, type IsitCodeAssignment, type IsitReviewEvent } from "@/lib/isit-classification/types";
 import { loadIsitTaxonomy, toTreePayload } from "@/lib/isit-taxonomy/taxonomy";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import { ReviewForm } from "@/components/isit-review/review-form";
 import { buildIsitTree } from "@/components/isit-review/isit-tree";
 import { TreeView } from "@/components/isit-review/tree-view";
 import { IsitResultCard } from "@/components/isit-review/result-card";
-import { FlagList, OutcomeBadge, OUTCOME_LABELS, WorkflowStatusBadge } from "@/components/isit-review/status-badges";
+import { FlagList, OutcomeBadge, WorkflowStatusBadge } from "@/components/isit-review/status-badges";
 
 export const dynamic = "force-dynamic";
 
@@ -69,11 +69,7 @@ export default async function IsitReviewDetailPage({ params }: PageProps) {
   if (!record || !news) notFound();
 
   const suggestion = record.ai ? await isitRepository.findSuggestionById(String(record.ai.suggestion_id)) : null;
-  const stages = (suggestion?.stages ?? {}) as {
-    gate?: GateOutput;
-    route?: { output: RouteOutput };
-    select?: { output: SelectOutput };
-  };
+  const stages = readStages(suggestion);
   const taxonomy = loadIsitTaxonomy();
 
   const confidence = new Map(stages.select?.output.codes.map((c) => [c.code, c.confidence]) ?? []);

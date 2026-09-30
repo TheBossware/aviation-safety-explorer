@@ -25,6 +25,13 @@ export const ISIT_OUTCOME_VALUES: readonly IsitOutcome[] = [
   "revoked",
 ];
 
+export const OUTCOME_LABELS: Record<IsitOutcome, string> = {
+  classified: "Classified",
+  not_applicable: "Not applicable",
+  insufficient_evidence: "Insufficient evidence",
+  revoked: "Revoked",
+};
+
 /**
  * Where the record is in the pipeline.
  * - pending       awaiting an AI run
@@ -44,6 +51,15 @@ export const ISIT_WORKFLOW_STATUS_VALUES: readonly IsitWorkflowStatus[] = [
   "approved",
   "stale",
 ];
+
+export const WORKFLOW_STATUS_LABELS: Record<IsitWorkflowStatus, string> = {
+  pending: "Pending",
+  ai_failed: "AI failed",
+  ai_suggested: "AI suggested",
+  needs_review: "Needs review",
+  approved: "Approved",
+  stale: "Stale",
+};
 
 export type IsitRelationType = "revokes" | "updates" | "same_article" | "possible_duplicate";
 

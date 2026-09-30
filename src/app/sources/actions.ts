@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 
+import { isOneOf } from "@/lib/shared/guards";
 import * as sourcesRepository from "@/lib/sources/repository";
-import { SOURCE_TYPE_VALUES, type CreateSourceInput, type SourceType } from "@/lib/sources/types";
+import { SOURCE_TYPE_VALUES, type CreateSourceInput } from "@/lib/sources/types";
 
 export interface SourceFormState {
   error?: string;
@@ -23,13 +24,13 @@ function parseSourceForm(formData: FormData): { data: CreateSourceInput } | { er
 
   if (!id) return { error: "Source ID is required." };
   if (!name) return { error: "Name is required." };
-  if (!SOURCE_TYPE_VALUES.includes(type as SourceType)) {
+  if (!isOneOf(SOURCE_TYPE_VALUES, type)) {
     return { error: "Select a valid source type." };
   }
   if (!url) return { error: "URL is required." };
   if (!category) return { error: "Category is required." };
 
-  return { data: { id, name, type: type as SourceType, url, category, active } };
+  return { data: { id, name, type, url, category, active } };
 }
 
 export async function createSourceAction(

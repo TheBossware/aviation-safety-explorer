@@ -2,17 +2,17 @@ import Link from "next/link";
 import { BookOpen, ClipboardCheck } from "lucide-react";
 
 import * as isitRepository from "@/lib/isit-classification/repository";
-import { ISIT_WORKFLOW_STATUS_VALUES, type IsitWorkflowStatus } from "@/lib/isit-classification/types";
+import {
+  ISIT_WORKFLOW_STATUS_VALUES,
+  WORKFLOW_STATUS_LABELS,
+  type IsitWorkflowStatus,
+} from "@/lib/isit-classification/types";
+import { isOneOf } from "@/lib/shared/guards";
 import { toSingle, type SearchParams } from "@/lib/shared/search-params";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  FlagList,
-  OutcomeBadge,
-  WORKFLOW_STATUS_LABELS,
-  WorkflowStatusBadge,
-} from "@/components/isit-review/status-badges";
+import { FlagList, OutcomeBadge, WorkflowStatusBadge } from "@/components/isit-review/status-badges";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +30,7 @@ function formatDate(value: Date | null): string {
 export default async function IsitReviewPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const requested = toSingle(params.status);
-  const status = (ISIT_WORKFLOW_STATUS_VALUES as readonly string[]).includes(requested ?? "")
-    ? (requested as IsitWorkflowStatus)
-    : undefined;
+  const status = isOneOf(ISIT_WORKFLOW_STATUS_VALUES, requested) ? requested : undefined;
 
   const [rows, counts] = await Promise.all([isitRepository.findForReview({ status }), isitRepository.countByStatus()]);
   const total = Object.values(counts).reduce((sum, n) => sum + (n ?? 0), 0);

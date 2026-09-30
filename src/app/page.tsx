@@ -2,14 +2,18 @@ import Link from "next/link";
 import { AlertTriangle, ClipboardCheck, Newspaper, Rss, Siren } from "lucide-react";
 
 import { getDashboardData } from "@/lib/dashboard-data";
-import { ISIT_OUTCOME_VALUES, ISIT_WORKFLOW_STATUS_VALUES } from "@/lib/isit-classification/types";
+import {
+  ISIT_OUTCOME_VALUES,
+  ISIT_WORKFLOW_STATUS_VALUES,
+  OUTCOME_LABELS,
+  WORKFLOW_STATUS_LABELS,
+} from "@/lib/isit-classification/types";
 import { SeverityBadge } from "@/components/aviation-news/severity-badge";
 import { BarList } from "@/components/dashboard/bar-list";
 import { SeverityBySource } from "@/components/dashboard/severity-by-source";
 import { SeverityLegend } from "@/components/dashboard/severity-legend";
 import { Meter, StatCard } from "@/components/dashboard/stat-card";
 import { WeeklySeverityChart } from "@/components/dashboard/weekly-severity-chart";
-import { OUTCOME_LABELS, WORKFLOW_STATUS_LABELS } from "@/components/isit-review/status-badges";
 import { DetailsButton } from "@/components/nav-buttons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 

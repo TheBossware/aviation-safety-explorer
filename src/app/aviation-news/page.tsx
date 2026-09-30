@@ -1,6 +1,7 @@
 import * as aviationNewsRepository from "@/lib/aviation-news/repository";
 import * as isitRepository from "@/lib/isit-classification/repository";
 import * as sourcesRepository from "@/lib/sources/repository";
+import { isOneOf } from "@/lib/shared/guards";
 import { SEVERITY_VALUES, type Severity } from "@/lib/shared/types";
 import { toArray, toSingle, type SearchParams } from "@/lib/shared/search-params";
 import { IncidentHeader } from "@/components/aviation-news/incident-header";
@@ -22,7 +23,7 @@ function normalize(value: string | undefined): string | undefined {
 }
 
 function toSeverityFilter(value: string | string[] | undefined): Severity[] {
-  return toArray(value).filter((v): v is Severity => (SEVERITY_VALUES as string[]).includes(v));
+  return toArray(value).filter((v): v is Severity => isOneOf(SEVERITY_VALUES, v));
 }
 
 function toSortOrder(value: string | undefined): "asc" | "desc" {

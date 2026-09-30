@@ -2,16 +2,12 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { describeFlag } from "@/components/isit-review/flag-descriptions";
-import type { IsitOutcome, IsitWorkflowStatus } from "@/lib/isit-classification/types";
-
-export const WORKFLOW_STATUS_LABELS: Record<IsitWorkflowStatus, string> = {
-  pending: "Pending",
-  ai_failed: "AI failed",
-  ai_suggested: "AI suggested",
-  needs_review: "Needs review",
-  approved: "Approved",
-  stale: "Stale",
-};
+import {
+  OUTCOME_LABELS,
+  WORKFLOW_STATUS_LABELS,
+  type IsitOutcome,
+  type IsitWorkflowStatus,
+} from "@/lib/isit-classification/types";
 
 const WORKFLOW_STATUS_VARIANT: Record<IsitWorkflowStatus, "default" | "secondary" | "destructive" | "outline"> = {
   pending: "outline",
@@ -20,13 +16,6 @@ const WORKFLOW_STATUS_VARIANT: Record<IsitWorkflowStatus, "default" | "secondary
   needs_review: "destructive",
   approved: "default",
   stale: "outline",
-};
-
-export const OUTCOME_LABELS: Record<IsitOutcome, string> = {
-  classified: "Classified",
-  not_applicable: "Not applicable",
-  insufficient_evidence: "Insufficient evidence",
-  revoked: "Revoked",
 };
 
 export function WorkflowStatusBadge({ status }: { status: IsitWorkflowStatus }) {

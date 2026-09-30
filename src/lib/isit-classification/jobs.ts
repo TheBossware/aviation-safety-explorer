@@ -24,6 +24,7 @@ import {
   findRunHistory,
   markForReview,
   saveRun,
+  type EnsurePendingResult,
   type PreprocessWrite,
 } from "./repository";
 import { decideScope } from "./scope";
@@ -53,7 +54,7 @@ export async function planSeed(): Promise<SeedPlan> {
 }
 
 /** Creates a `pending` record for every in-scope news item; existing records are never modified. */
-export async function seedPending(plan?: SeedPlan) {
+export async function seedPending(plan?: SeedPlan): Promise<EnsurePendingResult> {
   const { inScope } = plan ?? (await planSeed());
   await ensureIndexes();
   return ensurePending(inScope);
@@ -102,8 +103,14 @@ export async function planPreprocessAll(): Promise<PreprocessAllPlan> {
   return { news, seeded, unseeded, results, relations, writes, inputChanged };
 }
 
+export interface PreprocessAllSummary {
+  planned: number;
+  written: number;
+  inputChanged: number;
+}
+
 /** Applies the deterministic preprocessing (never touches `ai` or `final`). */
-export async function preprocessAll(plan?: PreprocessAllPlan) {
+export async function preprocessAll(plan?: PreprocessAllPlan): Promise<PreprocessAllSummary> {
   const { writes, inputChanged } = plan ?? (await planPreprocessAll());
   const written = await applyPreprocess(writes);
   return { planned: writes.length, written, inputChanged };
