@@ -30,7 +30,6 @@ import {
   type EnsurePendingResult,
   type PreprocessWrite,
 } from "./repository";
-import { decideScope } from "./scope";
 import { ISIT_SOURCE_ID, type IsitClassification, type IsitRelation, type IsitWorkflowStatus } from "./types";
 
 /** Model calls in flight at once. */
@@ -40,27 +39,17 @@ const CONCURRENCY = 3;
 
 export interface SeedPlan {
   news: AviationNews[];
-  inScope: AviationNews[];
-  skipped: Array<{ id: string; reason: string }>;
 }
 
 export async function planSeed(): Promise<SeedPlan> {
-  const news = await findAllBySource(ISIT_SOURCE_ID);
-  const inScope: AviationNews[] = [];
-  const skipped: SeedPlan["skipped"] = [];
-  for (const item of news) {
-    const scope = decideScope(item);
-    if (scope.inScope) inScope.push(item);
-    else skipped.push({ id: item._id, reason: scope.reason });
-  }
-  return { news, inScope, skipped };
+  return { news: await findAllBySource(ISIT_SOURCE_ID) };
 }
 
-/** Creates a `pending` record for every in-scope news item; existing records are never modified. */
+/** Creates a `pending` record for every AvHerald news item; existing records are never modified. */
 export async function seedPending(plan?: SeedPlan): Promise<EnsurePendingResult> {
-  const { inScope } = plan ?? (await planSeed());
+  const { news } = plan ?? (await planSeed());
   await ensureIndexes();
-  return ensurePending(inScope);
+  return ensurePending(news);
 }
 
 // --- preprocess -------------------------------------------------------------------------------
@@ -76,7 +65,7 @@ export interface PreprocessAllPlan {
 }
 
 export async function planPreprocessAll(): Promise<PreprocessAllPlan> {
-  const news = (await findAllBySource(ISIT_SOURCE_ID)).filter((item) => decideScope(item).inScope);
+  const news = await findAllBySource(ISIT_SOURCE_ID);
   const records = new Map((await findByNewsIds(news.map((item) => item._id))).map((r) => [r.news_id, r]));
   const unseeded = news.filter((item) => !records.has(item._id));
   const seeded = news.filter((item) => records.has(item._id));

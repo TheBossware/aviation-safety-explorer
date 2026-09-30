@@ -25,9 +25,7 @@ can be unit-tested; do the I/O in a thin function that calls them.
 (`findActive()`, `countFetchedSince(date)`, `countPublishedSince(date, severities)`) — never
 accept raw query objects or DB field names from callers, so Mongo operators and field names stay
 inside. Collection names are constants on the model (`AVIATION_NEWS_COLLECTION`), not string
-literals elsewhere. Exception on purpose: `isit-classification/repository.ts` `ensurePending`
-re-checks `decideScope` before writing — it is the only writer of new ISIT records into the DB
-shared with n8n, so keep that guard there even though callers filter first.
+literals elsewhere.
 
 **Types.** Everything a feature exposes — including query result shapes like `AirlineCount` or
 `SourceActivity` — lives in its `types.ts`; components import types from there, never from

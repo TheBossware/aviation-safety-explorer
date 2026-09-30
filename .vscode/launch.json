@@ -1,0 +1,81 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Next.js: debug server-side",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev -- --inspect"
+    },
+    {
+      "name": "Test: debug current file",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--import", "tsx"],
+      "program": "${file}",
+      "cwd": "${workspaceFolder}",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "ISIT 1: seed (WRITES to DB)",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--env-file=.env.local", "--import", "tsx"],
+      "program": "${workspaceFolder}/scripts/isit-seed.ts",
+      "args": ["--write"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "ISIT 2: preprocess (WRITES to DB)",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--env-file=.env.local", "--import", "tsx"],
+      "program": "${workspaceFolder}/scripts/isit-preprocess.ts",
+      "args": ["--write"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "ISIT 3a: batch dry run (read-only)",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--env-file=.env.local", "--import", "tsx"],
+      "program": "${workspaceFolder}/scripts/isit-batch.ts",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "ISIT 3b: classify next 1 record (Claude + WRITES to DB)",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--env-file=.env.local", "--import", "tsx"],
+      "program": "${workspaceFolder}/scripts/isit-batch.ts",
+      "args": ["--write", "--limit", "1"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "ISIT 3c: classify one news id (Claude + WRITES to DB)",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["--env-file=.env.local", "--import", "tsx"],
+      "program": "${workspaceFolder}/scripts/isit-batch.ts",
+      "args": ["--write", "--ids", "${input:newsId}"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "newsId",
+      "type": "promptString",
+      "description": "aviation_news _id to classify"
+    }
+  ]
+}

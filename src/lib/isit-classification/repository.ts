@@ -12,7 +12,7 @@ import {
 } from "./model";
 import { INPUT_CHANGED_FLAG, type PreprocessPlan } from "./preprocess";
 import type { ReviewEventDraft } from "./review";
-import { decideScope } from "./scope";
+import { articleIdFromUrl } from "./scope";
 import type {
   IsitClassification,
   IsitFinal,
@@ -77,13 +77,6 @@ export async function ensurePending(news: AviationNews[]): Promise<EnsurePending
 
   const now = new Date();
   const operations = news.map((item) => {
-    // Deliberately re-checked here although callers already filter: this is the only writer of new
-    // records into a DB shared with n8n, so an out-of-scope item must never get through, whatever
-    // the caller did. Throwing before bulkWrite means nothing of the batch is written.
-    const scope = decideScope(item);
-    if (!scope.inScope) {
-      throw new Error(`News ${item._id} is outside the ISIT scope: ${scope.reason}`);
-    }
     const newsId = new Types.ObjectId(item._id);
     return {
       updateOne: {
@@ -92,7 +85,7 @@ export async function ensurePending(news: AviationNews[]): Promise<EnsurePending
           $setOnInsert: {
             news_id: newsId,
             source_id: item.source_id,
-            article_id: scope.articleId,
+            article_id: articleIdFromUrl(item.url ?? ""),
             input: {
               url: item.url,
               post_url: item.post_url ?? null,
