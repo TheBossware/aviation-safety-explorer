@@ -19,9 +19,9 @@ import { SEVERITY_LABELS, SEVERITY_VALUES } from "@/lib/shared/types";
 import { toArray, toSingle, type SearchParams } from "@/lib/shared/search-params";
 import type { Source } from "@/lib/sources/types";
 import type { AirlineCount } from "@/lib/aviation-news/types";
+import { DATE_RANGES } from "@/lib/aviation-news/filters";
 import {
   DATE_RANGE_LABELS,
-  DATE_RANGES,
   selectLabel,
   SORT_LABELS,
   SORT_OPTIONS,

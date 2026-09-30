@@ -1,13 +1,6 @@
-/** Select options shared by the filter toolbar and the filter form. "All" means "no filter". */
+/** Select options shared by the filter toolbar and the filter form. `ALL` means "no filter". */
 
-export const DATE_RANGES = [
-  { value: "7d", label: "Last 7 days" },
-  { value: "30d", label: "Last 30 days" },
-  { value: "90d", label: "Last 90 days" },
-  { value: "6m", label: "Last 6 months" },
-  { value: "1y", label: "Last 1 year" },
-  { value: "All", label: "All time" },
-];
+import { ALL, DATE_RANGES } from "@/lib/aviation-news/filters";
 
 export const SORT_OPTIONS = [
   { value: "desc", label: "Newest first" },
@@ -20,7 +13,7 @@ export const SORT_OPTIONS = [
  * the chosen option's label.
  */
 export function selectLabel(unfiltered: string, labels: Record<string, string> = {}) {
-  return (value: string | null) => (!value || value === "All" ? unfiltered : (labels[value] ?? value));
+  return (value: string | null) => (!value || value === ALL ? unfiltered : (labels[value] ?? value));
 }
 
 export const DATE_RANGE_LABELS = Object.fromEntries(DATE_RANGES.map((r) => [r.value, r.label]));

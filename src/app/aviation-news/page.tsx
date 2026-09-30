@@ -1,9 +1,8 @@
+import { parseAviationNewsFilter } from "@/lib/aviation-news/filters";
 import * as aviationNewsRepository from "@/lib/aviation-news/repository";
 import * as isitRepository from "@/lib/isit-classification/repository";
 import * as sourcesRepository from "@/lib/sources/repository";
-import { isOneOf } from "@/lib/shared/guards";
-import { SEVERITY_VALUES, type Severity } from "@/lib/shared/types";
-import { toArray, toSingle, type SearchParams } from "@/lib/shared/search-params";
+import type { SearchParams } from "@/lib/shared/search-params";
 import { IncidentHeader } from "@/components/aviation-news/incident-header";
 import { FilterToolbar } from "@/components/aviation-news/filter-toolbar";
 import { MobileFiltersSheet } from "@/components/aviation-news/mobile-filters-sheet";
@@ -17,58 +16,9 @@ interface PageProps {
   searchParams: Promise<SearchParams>;
 }
 
-/** The "All" sentinel is how Select components represent "no filter"; normalize it away here. */
-function normalize(value: string | undefined): string | undefined {
-  return value && value !== "All" ? value : undefined;
-}
-
-function toSeverityFilter(value: string | string[] | undefined): Severity[] {
-  return toArray(value).filter((v): v is Severity => isOneOf(SEVERITY_VALUES, v));
-}
-
-function toSortOrder(value: string | undefined): "asc" | "desc" {
-  return value === "asc" ? "asc" : "desc";
-}
-
-function publishedAfterFromRange(range: string | undefined): Date | undefined {
-  if (!range) return undefined;
-  const from = new Date();
-  switch (range) {
-    case "7d":
-      from.setDate(from.getDate() - 7);
-      return from;
-    case "30d":
-      from.setDate(from.getDate() - 30);
-      return from;
-    case "90d":
-      from.setDate(from.getDate() - 90);
-      return from;
-    case "6m":
-      from.setMonth(from.getMonth() - 6);
-      return from;
-    case "1y":
-      from.setFullYear(from.getFullYear() - 1);
-      return from;
-    default:
-      return undefined;
-  }
-}
-
 export default async function AviationNewsPage({ searchParams }: PageProps) {
   const params = await searchParams;
-
-  const filter = {
-    category: normalize(toSingle(params.category)),
-    severity: toSeverityFilter(params.severity),
-    sourceId: normalize(toSingle(params.source)),
-    publishedAfter: publishedAfterFromRange(normalize(toSingle(params.range))),
-    q: toSingle(params.q),
-    aircraft: toSingle(params.aircraft),
-    tag: toSingle(params.tag),
-    airline: normalize(toSingle(params.airline)),
-    sort: toSortOrder(toSingle(params.sort)),
-    page: Number(toSingle(params.page)) || 1,
-  };
+  const filter = parseAviationNewsFilter(params);
 
   const [{ items, total, page, pageSize }, categories, sources, airlines] = await Promise.all([
     aviationNewsRepository.findFiltered(filter),
