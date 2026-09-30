@@ -25,7 +25,9 @@ export default async function DashboardPage() {
   let data: DashboardData;
   try {
     data = await getDashboardData();
-  } catch {
+  } catch (error) {
+    // Most often the database is unreachable, but log it: this catch also hides any other bug.
+    console.error("Dashboard data failed to load", error);
     return <DatabaseUnavailable />;
   }
 

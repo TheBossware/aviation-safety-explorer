@@ -8,6 +8,7 @@ import * as isitRepository from "@/lib/isit-classification/repository";
 import { REVIEWER_COOKIE } from "@/lib/isit-classification/review";
 import { readStages } from "@/lib/isit-classification/stages";
 import { loadIsitTaxonomy } from "@/lib/isit-taxonomy/taxonomy";
+import { isObjectId } from "@/lib/shared/guards";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/nav-buttons";
 import { AiSuggestionCard } from "@/components/isit-review/ai-suggestion-card";
@@ -23,11 +24,9 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-const OBJECT_ID = /^[0-9a-f]{24}$/i;
-
 export default async function IsitReviewDetailPage({ params }: PageProps) {
   const { id } = await params;
-  if (!OBJECT_ID.test(id)) notFound();
+  if (!isObjectId(id)) notFound();
 
   const [record, news, events, cookieStore] = await Promise.all([
     isitRepository.findByNewsId(id),

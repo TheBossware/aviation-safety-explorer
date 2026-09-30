@@ -68,6 +68,16 @@ rather than guessing. Past mistakes from guessing instead of checking: `sources.
 format (`rss`/`json`), not an org category; `severity` is stored **uppercase** with 5 values
 (`INFO`/`LOW`/`MEDIUM`/`HIGH`/`CRITICAL`), not lowercase/4-value.
 
+**Errors and validation.** Check an id from a URL or form with `isObjectId()`
+(`src/lib/shared/guards.ts`) before querying — call `notFound()` in pages, return
+`{ error: "… not found." }` in actions — since Mongoose throws a CastError on anything else.
+Validate form input with a zod schema in `src/lib/<feature>/validation.ts` (e.g.
+`parseSourceForm`) that returns `{ data } | { error }` with the first problem as a user-facing
+message. Server Actions return `{ error?: string }` instead of throwing, and show it in the UI;
+unexpected errors are `console.error`-ed on the server with context, never shown raw to the user.
+Rendering errors fall through to `src/app/error.tsx` (in this Next.js version its recovery prop is
+`retry`, not `reset`). Never write `catch {}` without logging.
+
 **Auth.** Server Actions currently have no authentication/authorization checks — deliberate,
 this is treated as an internal-only tool for now. Add auth guards before any public/production
 deployment (Next.js docs: Server Actions are reachable via direct POST regardless of UI).

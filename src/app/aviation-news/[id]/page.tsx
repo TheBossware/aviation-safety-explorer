@@ -3,6 +3,7 @@ import { Sparkles } from "lucide-react";
 
 import * as aviationNewsRepository from "@/lib/aviation-news/repository";
 import * as isitRepository from "@/lib/isit-classification/repository";
+import { isObjectId } from "@/lib/shared/guards";
 import { NewsDetailCard } from "@/components/aviation-news/news-detail-card";
 import { IsitResultCard } from "@/components/isit-review/result-card";
 import { BackButton, DetailsButton } from "@/components/nav-buttons";
@@ -15,6 +16,7 @@ interface PageProps {
 
 export default async function IncidentDetailPage({ params }: PageProps) {
   const { id } = await params;
+  if (!isObjectId(id)) notFound();
   const item = await aviationNewsRepository.findById(id);
   if (!item) notFound();
 
