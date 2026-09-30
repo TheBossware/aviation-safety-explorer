@@ -39,4 +39,9 @@ export async function dbConnect(): Promise<typeof mongoose> {
   return cache.conn;
 }
 
+/** Closes the connection so a CLI script can exit; the app itself never calls this. */
+export async function dbDisconnect(): Promise<void> {
+  await mongoose.disconnect();
+}
+
 export default dbConnect;

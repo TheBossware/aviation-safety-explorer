@@ -11,7 +11,7 @@
  * prompt version, and records that failed MAX_ATTEMPTS times (those go to review instead).
  * n8n runs the same job (seed + preprocess + classify) through POST /api/isit/run.
  */
-import mongoose from "mongoose";
+import { runScript } from "./run-script";
 
 import { MAX_ATTEMPTS } from "@/lib/isit-classification/classify-run";
 import { planClassify, runClassify } from "@/lib/isit-classification/jobs";
@@ -78,9 +78,4 @@ ${summary.untouched} record(s) left untouched (no attempt recorded); fix the acc
   );
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(() => mongoose.disconnect());
+runScript(main);

@@ -6,7 +6,7 @@
  *   npm run isit:revalidate            dry run
  *   npm run isit:revalidate -- --write
  */
-import mongoose from "mongoose";
+import { runScript } from "./run-script";
 
 import { findAllBySource } from "@/lib/aviation-news/repository";
 import { emptyUsage } from "@/lib/isit-classification/llm/client";
@@ -96,9 +96,4 @@ async function main() {
   if (!write && changed) console.log("dry run: nothing written; re-run with --write");
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(() => mongoose.disconnect());
+runScript(main);

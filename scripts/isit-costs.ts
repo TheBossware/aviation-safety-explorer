@@ -6,7 +6,7 @@
  * Suggestions created before cache tokens were recorded (2026-09-29 ~09:30 UTC) lack their cache
  * reads; their cost is slightly underestimated (cache reads are 5% of the input price).
  */
-import mongoose from "mongoose";
+import { runScript } from "./run-script";
 
 import { estimateCost } from "@/lib/isit-classification/llm/pricing";
 import { findSuggestionUsage } from "@/lib/isit-classification/repository";
@@ -62,9 +62,4 @@ async function main() {
   if (succeeded) console.log(`average per successful run: $${(total.cost / succeeded).toFixed(3)}`);
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(() => mongoose.disconnect());
+runScript(main);

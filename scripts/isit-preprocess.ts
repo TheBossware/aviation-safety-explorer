@@ -4,7 +4,7 @@
  *   npm run isit:preprocess            dry run: prints the report, writes nothing
  *   npm run isit:preprocess -- --write applies the changes (never touches `ai` or `final`)
  */
-import mongoose from "mongoose";
+import { runScript } from "./run-script";
 
 import { planPreprocessAll, preprocessAll } from "@/lib/isit-classification/jobs";
 import { PREPROCESS_FLAGS } from "@/lib/isit-classification/preprocess";
@@ -49,9 +49,4 @@ async function main() {
   console.log(`\nwritten: ${written}/${writes.length}${written < writes.length ? " (others changed concurrently; re-run)" : ""}`);
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(() => mongoose.disconnect());
+runScript(main);

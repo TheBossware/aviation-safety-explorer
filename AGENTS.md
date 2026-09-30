@@ -17,7 +17,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 the repository directly. Business logic that actually exists gets its own named module in the
 feature folder, next to the repository (the "service" role): e.g. `aviation-news/filters.ts`
 (URL → filter), `dashboard/dashboard.ts` (loads) + `dashboard/aggregations.ts` (calculates),
-`isit-classification/{jobs,review,pipeline}.ts`. Keep calculations pure (no DB access) so they
+`isit-classification/{jobs,review,pipeline}.ts` (with the per-record classify decisions in
+`classify-run.ts`). Keep calculations pure (no DB access) so they
 can be unit-tested; do the I/O in a thin function that calls them.
 
 **Repositories.** The only files that touch Mongoose/MongoDB. Name functions by intent
@@ -84,7 +85,10 @@ Secondary in-app links sitting next to a primary one (e.g. "Review guide" beside
 **Filtering.** List pages filter via URL `searchParams`, not client-side state — see
 `src/components/aviation-news/filter-form.tsx`. Turning the URL into a repository filter is
 `parseAviationNewsFilter()` in `src/lib/aviation-news/filters.ts`, which also holds the option
-lists shared with the UI (`DATE_RANGES`, the `ALL` "no filter" sentinel). Forms use native `method="GET"` for progressive
+lists shared with the UI (`DATE_RANGES`, the `ALL` "no filter" sentinel). Every filter Select is
+a `FilterSelect` (`src/components/aviation-news/filter-select.tsx`) — stand-alone
+(`value` + `onValueChange`, navigates at once) in the toolbar, or a form field (`name` +
+`defaultValue`) in the filter form — fed by the option builders in `filter-options.ts`. Forms use native `method="GET"` for progressive
 enhancement, with `onSubmit` intercepted via `router.push()` so the transition goes through the
 client router (needed for `loading.tsx` to show). An uncontrolled form re-synced from
 `searchParams` needs `key={JSON.stringify(searchParams)}` to remount on filter change, or
@@ -101,6 +105,11 @@ client router (needed for `loading.tsx` to show). An uncontrolled form re-synced
 never import it into Client Components (~1.3 MB). Resolve parents via `parentCode`/`ancestors()`,
 never string prefixes (8- and 9-digit codes collide). A code's dimension comes from its level-2
 branch.
+
+**CLI scripts.** `scripts/isit-*.ts` (run via `npm run isit:*`) are thin wrappers around
+`src/lib/isit-classification/jobs.ts`; they default to a dry run and write only with `--write`.
+Each ends with `runScript(main)` from `scripts/run-script.ts` (error → exit code 1, always closes
+the DB connection) — don't import `mongoose` in scripts.
 
 **Tests and verification.** `npm test` (node:test + tsx) runs every `src/**/*.test.ts`; tests sit
 next to the module they cover. Pure logic in `src/lib/` gets tests; before moving or reshaping

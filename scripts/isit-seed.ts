@@ -6,7 +6,7 @@
  *
  * Existing records are never modified, so it is safe to re-run after each n8n ingest.
  */
-import mongoose from "mongoose";
+import { runScript } from "./run-script";
 
 import { planSeed, seedPending } from "@/lib/isit-classification/jobs";
 import { findExistingNewsIds } from "@/lib/isit-classification/repository";
@@ -32,9 +32,4 @@ async function main() {
   console.log(`inserted ${result.inserted}, already present ${result.existing}`);
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(() => mongoose.disconnect());
+runScript(main);
