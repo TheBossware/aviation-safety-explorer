@@ -5,15 +5,18 @@
 import { findAllBySource } from "@/lib/aviation-news/repository";
 import type { AviationNews } from "@/lib/aviation-news/types";
 import { loadIsitTaxonomy } from "@/lib/isit-taxonomy/taxonomy";
+import { decideClassify, toSuggestion } from "./classify-run";
 import {
+  addUsage,
   createAnthropicClient,
+  emptyUsage,
   FatalClientError,
   ISIT_MODEL,
   type StageUsage,
 } from "./llm/client";
 import { estimateCost } from "./llm/pricing";
 import { PROMPT_VERSION } from "./llm/prompts";
-import { classify, mergeFlags, nextWorkflowStatus, PIPELINE_VERSION, type ClassifyResult } from "./pipeline";
+import { classify, mergeFlags, nextWorkflowStatus, type ClassifyResult } from "./pipeline";
 import { buildRelations, planPreprocessUpdate, preprocess, type PreprocessResult } from "./preprocess";
 import {
   applyPreprocess,
@@ -30,7 +33,7 @@ import {
 import { decideScope } from "./scope";
 import { ISIT_SOURCE_ID, type IsitClassification, type IsitRelation, type IsitWorkflowStatus } from "./types";
 
-export const MAX_ATTEMPTS = 3;
+/** Model calls in flight at once. */
 const CONCURRENCY = 3;
 
 // --- seed -------------------------------------------------------------------------------------
@@ -164,24 +167,26 @@ export async function planClassify({ limit = Infinity, ids, fetchedBefore }: Cla
     const id = String(record.news_id);
     const news = newsById.get(id);
     const past = history.get(id);
+    // Not preprocessed yet (counted as `unprocessed` below), or its news item is gone.
     if (!record.input.fingerprint || !news || !past) continue;
-    if (fetchedBefore && !(new Date(news.fetched_at) < fetchedBefore)) {
-      fetchedTooLate++;
-      continue;
+
+    switch (decideClassify(record.input.fingerprint, news, past, fetchedBefore)) {
+      case "fetched_too_late":
+        fetchedTooLate++;
+        break;
+      case "outdated_input":
+        outdatedInput++;
+        break;
+      case "up_to_date":
+        upToDate++;
+        break;
+      case "retries_exhausted":
+        exhausted.push(record);
+        break;
+      case "classify":
+        queue.push({ record, news });
+        break;
     }
-    if (preprocess(news).fingerprint !== record.input.fingerprint) {
-      outdatedInput++; // aviation_news changed since preprocessing
-      continue;
-    }
-    if (past.succeeded) {
-      upToDate++;
-      continue;
-    }
-    if (past.failedAttempts >= MAX_ATTEMPTS) {
-      exhausted.push(record);
-      continue;
-    }
-    queue.push({ record, news });
   }
 
   return {
@@ -221,20 +226,26 @@ export interface ClassifyRunOptions {
   onRecord?: (classified: ClassifiedRecord) => void;
 }
 
-/** Calls the model for every record in the plan and stores the results. */
-export async function runClassify(plan: ClassifyPlan, { deadline, onRecord }: ClassifyRunOptions = {}): Promise<ClassifyRunSummary> {
-  let movedToReview = 0;
-  for (const record of plan.exhausted) {
+/** Records out of retries go to human review without another model call. Returns how many moved. */
+async function moveToReview(exhausted: IsitClassification[]): Promise<number> {
+  let moved = 0;
+  for (const record of exhausted) {
     if (record.workflow_status !== "needs_review") {
       await markForReview(String(record.news_id), mergeFlags(record.flags, ["ai_error"]));
-      movedToReview++;
+      moved++;
     }
   }
+  return moved;
+}
+
+/** Calls the model for every record in the plan and stores the results. */
+export async function runClassify(plan: ClassifyPlan, { deadline, onRecord }: ClassifyRunOptions = {}): Promise<ClassifyRunSummary> {
+  const movedToReview = await moveToReview(plan.exhausted);
 
   const { batch, key } = plan;
   const taxonomy = loadIsitTaxonomy();
   const client = createAnthropicClient();
-  const usage: StageUsage = { input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
+  const usage = emptyUsage();
   const tally: Record<string, number> = {};
   let next = 0;
   let classified = 0;
@@ -264,22 +275,11 @@ export async function runClassify(plan: ClassifyPlan, { deadline, onRecord }: Cl
         expectedFingerprint: record.input.fingerprint!,
         flags,
         workflowStatus,
-        suggestion: {
-          status: result.status,
-          input_fingerprint: record.input.fingerprint!,
-          ...key,
-          pipeline_version: PIPELINE_VERSION,
-          outcome: result.outcome,
-          codes: result.codes,
-          flags: result.flags,
-          stages: { ...result.stages, served_models: result.servedModels },
-          error: result.error,
-          usage: result.usage,
-        },
+        suggestion: toSuggestion(record.input.fingerprint!, key, result),
       });
 
       classified++;
-      for (const field of Object.keys(usage) as Array<keyof StageUsage>) usage[field] += result.usage[field];
+      addUsage(usage, result.usage);
       const label = `${result.outcome ?? "FAILED"} / ${workflowStatus}`;
       tally[label] = (tally[label] ?? 0) + 1;
       onRecord?.({ news, result, workflowStatus, applied: saved.applied });

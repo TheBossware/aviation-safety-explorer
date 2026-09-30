@@ -13,7 +13,8 @@
  */
 import mongoose from "mongoose";
 
-import { MAX_ATTEMPTS, planClassify, runClassify } from "@/lib/isit-classification/jobs";
+import { MAX_ATTEMPTS } from "@/lib/isit-classification/classify-run";
+import { planClassify, runClassify } from "@/lib/isit-classification/jobs";
 import { PIPELINE_VERSION } from "@/lib/isit-classification/pipeline";
 
 function argValue(name: string): string | undefined {

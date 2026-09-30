@@ -13,6 +13,18 @@ export interface StageUsage {
   cache_creation_input_tokens: number;
 }
 
+export function emptyUsage(): StageUsage {
+  return { input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
+}
+
+/** Adds `usage` into `total` (mutates `total`). */
+export function addUsage(total: StageUsage, usage: StageUsage): void {
+  total.input_tokens += usage.input_tokens;
+  total.output_tokens += usage.output_tokens;
+  total.cache_read_input_tokens += usage.cache_read_input_tokens;
+  total.cache_creation_input_tokens += usage.cache_creation_input_tokens;
+}
+
 export interface StageRequest<T> {
   stage: "gate" | "route" | "select";
   /** Stable per stage (instructions, router list): sent with a cache breakpoint. */

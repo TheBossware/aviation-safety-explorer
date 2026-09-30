@@ -9,7 +9,8 @@
 import mongoose from "mongoose";
 
 import { findAllBySource } from "@/lib/aviation-news/repository";
-import { applySelection, mergeFlags, nextWorkflowStatus, PIPELINE_VERSION, type ClassifyResult } from "@/lib/isit-classification/pipeline";
+import { emptyUsage } from "@/lib/isit-classification/llm/client";
+import { applySelection, mergeFlags, nextWorkflowStatus, PIPELINE_VERSION } from "@/lib/isit-classification/pipeline";
 import { findAllClassifications, findSuggestionById, saveRun } from "@/lib/isit-classification/repository";
 import { readStages } from "@/lib/isit-classification/stages";
 import { ISIT_SOURCE_ID } from "@/lib/isit-classification/types";
@@ -67,7 +68,7 @@ async function main() {
     );
     if (!write) continue;
 
-    const result = { status: "succeeded", outcome: selected.outcome, codes: selected.codes, flags: aiFlags } as ClassifyResult;
+    const result = { status: "succeeded", outcome: selected.outcome } as const;
     const flags = mergeFlags(record.flags, aiFlags);
     await saveRun({
       newsId: String(record.news_id),
@@ -86,7 +87,7 @@ async function main() {
         flags: aiFlags,
         stages: { ...suggestion.stages, select: selected.stage, revalidated_from: suggestion._id },
         error: null,
-        usage: { input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+        usage: emptyUsage(),
       },
     });
   }

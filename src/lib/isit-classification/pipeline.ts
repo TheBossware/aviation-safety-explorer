@@ -1,7 +1,7 @@
 import type { AviationNews } from "@/lib/aviation-news/types";
 import type { IsitTaxonomy } from "@/lib/isit-taxonomy/taxonomy";
 import { ISIT_DIMENSIONS, type IsitDimension, type IsitIndexEntry } from "@/lib/isit-taxonomy/types";
-import { FatalClientError, type IsitModelClient, type StageUsage } from "./llm/client";
+import { addUsage, emptyUsage, FatalClientError, type IsitModelClient, type StageUsage } from "./llm/client";
 import { GATE_SYSTEM, recordBlock, routeSystem, SELECT_SYSTEM, selectUser } from "./llm/prompts";
 import { GateSchema, RouteSchema, SelectSchema, type SelectOutput } from "./llm/schemas";
 import { INPUT_CHANGED_FLAG, type PreprocessResult } from "./preprocess";
@@ -60,13 +60,6 @@ export interface ClassifyResult {
   servedModels: string[];
 }
 
-function addUsage(total: StageUsage, usage: StageUsage) {
-  total.input_tokens += usage.input_tokens;
-  total.output_tokens += usage.output_tokens;
-  total.cache_read_input_tokens += usage.cache_read_input_tokens;
-  total.cache_creation_input_tokens += usage.cache_creation_input_tokens;
-}
-
 /**
  * Gate -> route -> select, with every model answer re-validated. A retraction never reaches
  * code assignment, whatever the model says. Does no I/O besides the model client.
@@ -77,7 +70,7 @@ export async function classify(
   taxonomy: IsitTaxonomy,
   client: IsitModelClient
 ): Promise<ClassifyResult> {
-  const usage: StageUsage = { input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
+  const usage = emptyUsage();
   const stages: Record<string, unknown> = {};
   const servedModels = new Set<string>();
   const flags = new Set<string>();
@@ -196,7 +189,11 @@ export function mergeFlags(stored: string[], aiFlags: string[]): string[] {
  * Workflow status after an AI run. A stale record (approved, then its input changed) stays
  * stale: its `final` still stands until a human re-reviews it next to the new suggestion.
  */
-export function nextWorkflowStatus(current: IsitWorkflowStatus, result: ClassifyResult, flags: string[]): IsitWorkflowStatus {
+export function nextWorkflowStatus(
+  current: IsitWorkflowStatus,
+  result: Pick<ClassifyResult, "status" | "outcome">,
+  flags: string[]
+): IsitWorkflowStatus {
   if (current === "approved" || current === "stale") return current;
   if (result.status === "failed") return "ai_failed";
   const needsReview =
