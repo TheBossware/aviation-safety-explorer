@@ -90,13 +90,13 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   const [total, fetchedLast14d, fetchedLast7d, highLast30d, weeklyRows, activity, activeSources, categories, airlines, recentHigh, isit] =
     await Promise.all([
-      aviationNewsRepository.count(),
-      aviationNewsRepository.countSince("fetched_at", new Date(now - 14 * DAY_MS)),
-      aviationNewsRepository.countSince("fetched_at", new Date(now - 7 * DAY_MS)),
-      aviationNewsRepository.countSince("published_at", new Date(now - 30 * DAY_MS), { severity: HIGH_SEVERITIES }),
+      aviationNewsRepository.countAll(),
+      aviationNewsRepository.countFetchedSince(new Date(now - 14 * DAY_MS)),
+      aviationNewsRepository.countFetchedSince(new Date(now - 7 * DAY_MS)),
+      aviationNewsRepository.countPublishedSince(new Date(now - 30 * DAY_MS), HIGH_SEVERITIES),
       aviationNewsRepository.weeklySeverityCounts(firstWeek),
       aviationNewsRepository.sourceActivity(),
-      sourcesRepository.findAll({ active: true }),
+      sourcesRepository.findActive(),
       aviationNewsRepository.countByCategory(),
       aviationNewsRepository.airlineCounts(),
       aviationNewsRepository.findRecent(8, { severity: HIGH_SEVERITIES }),

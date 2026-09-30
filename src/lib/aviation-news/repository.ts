@@ -111,21 +111,26 @@ export async function distinctCategories(): Promise<string[]> {
   return categories.filter(Boolean).sort();
 }
 
-export async function count(filter: Partial<AviationNews> = {}): Promise<number> {
+export async function countAll(): Promise<number> {
   await dbConnect();
-  return AviationNewsModel.countDocuments(filter);
+  return AviationNewsModel.countDocuments({});
 }
 
-/** Items whose `field` date is on or after `since`, optionally limited to some severities. */
-export async function countSince(
-  field: "published_at" | "fetched_at",
-  since: Date,
-  filter: { severity?: Severity[] } = {}
-): Promise<number> {
+/** Items n8n ingested on or after `since`. */
+export async function countFetchedSince(since: Date): Promise<number> {
+  return countSince("fetched_at", since, []);
+}
+
+/** Items published on or after `since`, limited to `severities` when any are given. */
+export async function countPublishedSince(since: Date, severities: Severity[] = []): Promise<number> {
+  return countSince("published_at", since, severities);
+}
+
+async function countSince(field: "published_at" | "fetched_at", since: Date, severities: Severity[]): Promise<number> {
   await dbConnect();
   return AviationNewsModel.countDocuments({
     [field]: { $gte: since },
-    ...(filter.severity?.length ? { severity: { $in: filter.severity } } : {}),
+    ...(severities.length ? { severity: { $in: severities } } : {}),
   });
 }
 

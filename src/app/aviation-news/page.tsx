@@ -23,7 +23,7 @@ export default async function AviationNewsPage({ searchParams }: PageProps) {
   const [{ items, total, page, pageSize }, categories, sources, airlines] = await Promise.all([
     aviationNewsRepository.findFiltered(filter),
     aviationNewsRepository.distinctCategories(),
-    sourcesRepository.findAll({ active: true }),
+    sourcesRepository.findActive(),
     aviationNewsRepository.airlineCounts(),
   ]);
   const isitRecords = await isitRepository.findByNewsIds(items.map((item) => String(item._id)));

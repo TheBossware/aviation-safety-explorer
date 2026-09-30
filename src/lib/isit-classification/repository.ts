@@ -1,5 +1,6 @@
 import { Types } from "mongoose";
 
+import { AVIATION_NEWS_COLLECTION } from "@/lib/aviation-news/model";
 import type { AviationNews } from "@/lib/aviation-news/types";
 import { dbConnect } from "@/lib/mongodb";
 import { IsitClassificationModel, IsitReviewEventModel, IsitSuggestionModel } from "./model";
@@ -43,6 +44,9 @@ export async function ensurePending(news: AviationNews[]): Promise<EnsurePending
 
   const now = new Date();
   const operations = news.map((item) => {
+    // Deliberately re-checked here although callers already filter: this is the only writer of new
+    // records into a DB shared with n8n, so an out-of-scope item must never get through, whatever
+    // the caller did. Throwing before bulkWrite means nothing of the batch is written.
     const scope = decideScope(item);
     if (!scope.inScope) {
       throw new Error(`News ${item._id} is outside the ISIT scope: ${scope.reason}`);
@@ -283,7 +287,7 @@ export async function findForReview(filter: { status?: IsitWorkflowStatus } = {}
     news: Array<{ title: string; published_at: Date | null }>;
   }>([
     { $match: filter.status ? { workflow_status: filter.status } : {} },
-    { $lookup: { from: "aviation_news", localField: "news_id", foreignField: "_id", as: "news" } },
+    { $lookup: { from: AVIATION_NEWS_COLLECTION, localField: "news_id", foreignField: "_id", as: "news" } },
     { $project: { news_id: 1, workflow_status: 1, flags: 1, ai: 1, final: 1, "news.title": 1, "news.published_at": 1 } },
     { $sort: { "news.published_at": -1 } },
   ]);

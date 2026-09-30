@@ -2,6 +2,9 @@ import mongoose, { Schema, type Model } from "mongoose";
 import { SEVERITY_VALUES } from "@/lib/shared/types";
 import type { AviationNews } from "./types";
 
+/** Owned by n8n; also joined into by the ISIT review queue. */
+export const AVIATION_NEWS_COLLECTION = "aviation_news";
+
 /**
  * This collection is ingested by an external pipeline (n8n) — this app only
  * reads from it, so the schema is intentionally permissive (no `required`)
@@ -40,7 +43,7 @@ const AviationNewsSchema = new Schema<AviationNews>(
     airlines_extracted_by: String,
     airlines_extracted_at: Date,
   },
-  { collection: "aviation_news" }
+  { collection: AVIATION_NEWS_COLLECTION }
 );
 
 export const AviationNewsModel: Model<AviationNews> =

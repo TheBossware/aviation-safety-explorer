@@ -12,16 +12,18 @@ function serialize(doc: Source): Source {
   return { ...doc, _id: String(doc._id) };
 }
 
-export async function findAll(filter: Partial<Source> = {}): Promise<Source[]> {
+/** Every source, active or not, by name. */
+export async function findAll(): Promise<Source[]> {
   await dbConnect();
-  const docs = await SourceModel.find(filter).sort({ name: 1 }).lean<Source[]>();
+  const docs = await SourceModel.find({}).sort({ name: 1 }).lean<Source[]>();
   return docs.map(serialize);
 }
 
-export async function findById(id: string): Promise<Source | null> {
+/** Sources n8n currently polls, by name. */
+export async function findActive(): Promise<Source[]> {
   await dbConnect();
-  const doc = await SourceModel.findById(id).lean<Source>();
-  return doc ? serialize(doc) : null;
+  const docs = await SourceModel.find({ active: true }).sort({ name: 1 }).lean<Source[]>();
+  return docs.map(serialize);
 }
 
 export async function create(input: CreateSourceInput): Promise<Source> {
@@ -40,9 +42,4 @@ export async function remove(id: string): Promise<boolean> {
   await dbConnect();
   const res = await SourceModel.findByIdAndDelete(id);
   return res !== null;
-}
-
-export async function count(filter: Partial<Source> = {}): Promise<number> {
-  await dbConnect();
-  return SourceModel.countDocuments(filter);
 }
