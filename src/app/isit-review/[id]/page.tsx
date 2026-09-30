@@ -9,6 +9,7 @@ import { currentProposal, REVIEWER_COOKIE } from "@/lib/isit-classification/revi
 import { readStages } from "@/lib/isit-classification/stages";
 import { OUTCOME_LABELS, type IsitCodeAssignment, type IsitReviewEvent } from "@/lib/isit-classification/types";
 import { loadIsitTaxonomy, toTreePayload } from "@/lib/isit-taxonomy/taxonomy";
+import { formatDateUtc } from "@/lib/shared/format-date";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BackButton, ExternalButton } from "@/components/nav-buttons";
@@ -25,14 +26,9 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-function formatDate(value: Date | string | null | undefined, withTime = false): string {
-  if (!value) return "—";
-  return new Date(value).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    ...(withTime ? { hour: "2-digit", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" } : { timeZone: "UTC" }),
-  });
+/** A date of the record in UTC, "—" when the record doesn't have it (yet). */
+function dateOrDash(value: Date | string | null | undefined): string {
+  return value ? formatDateUtc(value) : "—";
 }
 
 function describeEvent(event: IsitReviewEvent): string {
@@ -129,23 +125,23 @@ export default async function IsitReviewDetailPage({ params }: PageProps) {
               <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
                 <div>
                   <dt className="text-xs text-muted-foreground">Occurrence (from title)</dt>
-                  <dd>{formatDate(record.dates.event_date)}</dd>
+                  <dd>{dateOrDash(record.dates.event_date)}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Posted</dt>
-                  <dd>{formatDate(news.published_at, true)}</dd>
+                  <dd>{dateOrDash(news.published_at)}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Fetched</dt>
-                  <dd>{formatDate(news.fetched_at, true)}</dd>
+                  <dd>{dateOrDash(news.fetched_at)}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Article created</dt>
-                  <dd>{formatDate(record.dates.article_created_at, true)}</dd>
+                  <dd>{dateOrDash(record.dates.article_created_at)}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Article updated</dt>
-                  <dd>{formatDate(record.dates.article_updated_at, true)}</dd>
+                  <dd>{dateOrDash(record.dates.article_updated_at)}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Article id</dt>
@@ -193,7 +189,7 @@ export default async function IsitReviewDetailPage({ params }: PageProps) {
               {suggestion && (
                 <p className="text-xs text-muted-foreground">
                   {suggestion.model} · prompt {suggestion.prompt_version} · taxonomy {suggestion.taxonomy_version} ·{" "}
-                  {formatDate(suggestion.created_at, true)}
+                  {dateOrDash(suggestion.created_at)}
                 </p>
               )}
             </CardHeader>
@@ -227,7 +223,7 @@ export default async function IsitReviewDetailPage({ params }: PageProps) {
               {record.final && (
                 <p className="text-xs text-muted-foreground">
                   Approved as {OUTCOME_LABELS[record.final.outcome]} by {record.final.approved_by} on{" "}
-                  {formatDate(record.final.approved_at, true)} (reviewer names are not verified)
+                  {dateOrDash(record.final.approved_at)} (reviewer names are not verified)
                 </p>
               )}
             </CardHeader>
@@ -254,7 +250,7 @@ export default async function IsitReviewDetailPage({ params }: PageProps) {
                 <ul className="flex flex-col gap-2 text-sm">
                   {events.map((event) => (
                     <li key={String(event._id)} className="border-l-2 pl-3">
-                      <span className="text-xs text-muted-foreground">{formatDate(event.at, true)}</span>{" "}
+                      <span className="text-xs text-muted-foreground">{dateOrDash(event.at)}</span>{" "}
                       <span className="font-medium">{event.actor}</span> {describeEvent(event)}
                       {event.comment && <p className="text-muted-foreground">“{event.comment}”</p>}
                     </li>

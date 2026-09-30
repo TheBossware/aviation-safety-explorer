@@ -4,6 +4,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import type { WeeklyPoint } from "@/lib/dashboard/types";
+import { formatDateUtc } from "@/lib/shared/format-date";
 import { SEVERITY_HEX } from "@/lib/shared/severity-colors";
 import { SEVERITY_LABELS, SEVERITY_VALUES } from "@/lib/shared/types";
 
@@ -11,8 +12,9 @@ const config: ChartConfig = Object.fromEntries(
   SEVERITY_VALUES.map((severity) => [severity, { label: SEVERITY_LABELS[severity], color: SEVERITY_HEX[severity] }])
 );
 
-function formatWeek(value: string): string {
-  return new Date(`${value}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+/** `week` is a YYYY-MM-DD key (Monday, UTC). */
+function formatWeek(week: string): string {
+  return formatDateUtc(`${week}T00:00:00Z`);
 }
 
 /** Items per publication week, stacked by severity (Info at the base, Critical on top). */

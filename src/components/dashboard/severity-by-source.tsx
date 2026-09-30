@@ -2,13 +2,8 @@ import Link from "next/link";
 
 import { SEVERITY_DOT_COLOR } from "@/components/aviation-news/severity-badge";
 import type { SourceActivity } from "@/lib/aviation-news/types";
+import { formatDateUtc } from "@/lib/shared/format-date";
 import { SEVERITY_LABELS, SEVERITY_VALUES } from "@/lib/shared/types";
-
-function formatShortDate(value: Date | null): string {
-  return value
-    ? new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
-    : "—";
-}
 
 /**
  * One stacked bar per source (severity mix, low → high left to right), scaled to the busiest
@@ -29,7 +24,7 @@ export function SeverityBySource({ rows }: { rows: SourceActivity[] }) {
               {row.total === 0 ? (
                 <span className="font-medium text-destructive">No items received</span>
               ) : (
-                <>last fetched {formatShortDate(row.lastFetchedAt)}</>
+                <>last fetched {row.lastFetchedAt ? formatDateUtc(row.lastFetchedAt) : "—"}</>
               )}
             </span>
           </div>

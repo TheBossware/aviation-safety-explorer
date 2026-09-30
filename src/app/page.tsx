@@ -8,6 +8,7 @@ import {
   OUTCOME_LABELS,
   WORKFLOW_STATUS_LABELS,
 } from "@/lib/isit-classification/types";
+import { formatDate, formatDateUtc } from "@/lib/shared/format-date";
 import { SeverityBadge } from "@/components/aviation-news/severity-badge";
 import { BarList } from "@/components/dashboard/bar-list";
 import { SeverityBySource } from "@/components/dashboard/severity-by-source";
@@ -18,23 +19,6 @@ import { DetailsButton } from "@/components/nav-buttons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
-
-function formatDateTime(value: Date | null): string {
-  return value
-    ? new Date(value).toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "UTC",
-        timeZoneName: "short",
-      })
-    : "never";
-}
-
-function formatDate(value: Date | string): string {
-  return new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
 
 function ChartCard({
   title,
@@ -107,7 +91,8 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
         <p className="text-sm text-muted-foreground">
-          Aviation safety news from {sources.rows.length} sources · last item received {formatDateTime(data.lastIngestAt)}
+          Aviation safety news from {sources.rows.length} sources · last item received{" "}
+          {data.lastIngestAt ? formatDateUtc(data.lastIngestAt) : "never"}
         </p>
       </div>
 

@@ -1,23 +1,12 @@
 import { currentProposal } from "@/lib/isit-classification/review";
 import type { IsitClassification } from "@/lib/isit-classification/types";
 import { loadIsitTaxonomy, toTreePayload } from "@/lib/isit-taxonomy/taxonomy";
+import { formatDateUtc } from "@/lib/shared/format-date";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buildIsitTree } from "@/components/isit-review/isit-tree";
 import { TreeView } from "@/components/isit-review/tree-view";
 import { CodeSourceBadge, OutcomeBadge } from "@/components/isit-review/status-badges";
-
-function formatDateTime(value: Date | string): string {
-  return new Date(value).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "UTC",
-    timeZoneName: "short",
-  });
-}
 
 /**
  * The record's current ISIT result as a tree: the approved `final` if there is one, otherwise the AI
@@ -60,7 +49,7 @@ export function IsitResultCard({
         </div>
         <p className="text-xs text-muted-foreground">
           {record.final
-            ? `Approved by ${record.final.approved_by} on ${formatDateTime(record.final.approved_at)}.`
+            ? `Approved by ${record.final.approved_by} on ${formatDateUtc(record.final.approved_at)}.`
             : "Not reviewed yet: this is the AI suggestion."}{" "}
           <CodeSourceBadge source="ai" /> suggested by the AI · <CodeSourceBadge source="sme" /> added by a reviewer
         </p>

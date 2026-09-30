@@ -8,16 +8,9 @@ import { DetailsButton } from "@/components/nav-buttons";
 import { SeverityBadge } from "@/components/aviation-news/severity-badge";
 import type { AviationNews } from "@/lib/aviation-news/types";
 import type { IsitClassification } from "@/lib/isit-classification/types";
+import { formatDate } from "@/lib/shared/format-date";
 
 const MAX_TAGS = 3;
-
-function formatDate(value: string | Date): string {
-  return new Date(value).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 export function IncidentCard({ item, isit }: { item: AviationNews; isit?: IsitClassification }) {
   const visibleTags = item.tags.slice(0, MAX_TAGS);

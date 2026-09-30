@@ -3,6 +3,7 @@ import { CalendarDays, Plane, PlaneTakeoff, Sparkles } from "lucide-react";
 
 import * as aviationNewsRepository from "@/lib/aviation-news/repository";
 import * as isitRepository from "@/lib/isit-classification/repository";
+import { formatDate } from "@/lib/shared/format-date";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { AirlineNames } from "@/components/aviation-news/airline-names";
@@ -14,17 +15,6 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string }>;
-}
-
-function formatDate(value: string | Date | null): string | null {
-  if (!value) return null;
-  return new Date(value).toLocaleString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 export default async function IncidentDetailPage({ params }: PageProps) {
@@ -54,7 +44,7 @@ export default async function IncidentDetailPage({ params }: PageProps) {
         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <CalendarDays className="size-3.5" />
-            {formatDate(item.published_at)}
+            {item.published_at ? formatDate(item.published_at) : null}
           </span>
           <span>{item.source_name}</span>
         </div>

@@ -7,6 +7,7 @@ import {
   WORKFLOW_STATUS_LABELS,
   type IsitWorkflowStatus,
 } from "@/lib/isit-classification/types";
+import { formatDate } from "@/lib/shared/format-date";
 import { isOneOf } from "@/lib/shared/guards";
 import { toSingle, type SearchParams } from "@/lib/shared/search-params";
 import { Button } from "@/components/ui/button";
@@ -22,10 +23,6 @@ interface PageProps {
 
 /** Order of the status tabs: what needs a human first. */
 const TAB_ORDER: IsitWorkflowStatus[] = ["needs_review", "ai_suggested", "stale", "ai_failed", "approved", "pending"];
-
-function formatDate(value: Date | null): string {
-  return value ? new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
-}
 
 export default async function IsitReviewPage({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -93,7 +90,7 @@ export default async function IsitReviewPage({ searchParams }: PageProps) {
                 <TableCell className="whitespace-normal">
                   {row.flags.length > 0 ? <FlagList flags={row.flags} /> : <span className="text-muted-foreground">—</span>}
                 </TableCell>
-                <TableCell className="text-muted-foreground">{formatDate(row.publishedAt)}</TableCell>
+                <TableCell className="text-muted-foreground">{row.publishedAt ? formatDate(row.publishedAt) : "—"}</TableCell>
                 <TableCell>
                   <WorkflowStatusBadge status={row.workflowStatus} />
                 </TableCell>
