@@ -26,7 +26,8 @@ export function addUsage(total: StageUsage, usage: StageUsage): void {
 }
 
 export interface StageRequest<T> {
-  stage: "gate" | "route" | "select";
+  /** `airlines` is the single-call airline extraction (`src/lib/airline-extraction`), which reuses this client. */
+  stage: "gate" | "route" | "select" | "airlines";
   /** Stable per stage (instructions, router list): sent with a cache breakpoint. */
   system: string;
   user: string;

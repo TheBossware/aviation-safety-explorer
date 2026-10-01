@@ -1,10 +1,11 @@
-import type { QueryFilter } from "mongoose";
+import { Types, type QueryFilter } from "mongoose";
 
 import { dbConnect } from "@/lib/mongodb";
 import type { Severity } from "@/lib/shared/types";
 import { AviationNewsModel, type AviationNewsDocument } from "./model";
 import type {
   AirlineCount,
+  AirlineExtraction,
   AviationNews,
   AviationNewsFilter,
   AviationNewsPage,
@@ -71,6 +72,16 @@ export async function findFiltered(filter: AviationNewsFilter): Promise<Aviation
 export async function findRecent(limit: number, filter: { severity?: Severity[] } = {}): Promise<AviationNews[]> {
   await dbConnect();
   const docs = await AviationNewsModel.find(filter.severity?.length ? { severity: { $in: filter.severity } } : {})
+    .sort({ published_at: -1 })
+    .limit(limit)
+    .lean<AviationNewsDocument[]>();
+  return docs.map(serialize);
+}
+
+/** Newest items whose airlines were never extracted (an empty list counts as extracted). */
+export async function findMissingAirlines(limit: number): Promise<AviationNews[]> {
+  await dbConnect();
+  const docs = await AviationNewsModel.find({ airlines: { $exists: false } })
     .sort({ published_at: -1 })
     .limit(limit)
     .lean<AviationNewsDocument[]>();
@@ -206,4 +217,26 @@ export async function countByCategory(): Promise<CategoryCount[]> {
     { $sort: { count: -1 } },
   ]);
   return rows.filter((row) => row._id).map((row) => ({ category: row._id!, count: row.count }));
+}
+
+export async function countMissingAirlines(): Promise<number> {
+  await dbConnect();
+  return AviationNewsModel.countDocuments({ airlines: { $exists: false } });
+}
+
+/** Stores extracted airlines; never overwrites an item that already has them. False if nothing was written. */
+export async function saveAirlines(id: string, extraction: AirlineExtraction): Promise<boolean> {
+  await dbConnect();
+  const result = await AviationNewsModel.updateOne(
+    { _id: new Types.ObjectId(id), airlines: { $exists: false } },
+    {
+      $set: {
+        airlines: extraction.airlines,
+        airline_roles: extraction.roles,
+        airlines_extracted_by: extraction.extractedBy,
+        airlines_extracted_at: new Date(),
+      },
+    }
+  );
+  return result.modifiedCount > 0;
 }

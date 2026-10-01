@@ -43,7 +43,7 @@ function fakeClient(script: { gate?: GateOutput; route?: RouteOutput; select?: S
     async run<T>(request: StageRequest<T>) {
       calls.push(request.stage);
       if (script.fail === request.stage) throw new Error("boom");
-      const output = script[request.stage];
+      const output = request.stage === "airlines" ? undefined : script[request.stage];
       if (!output) throw new Error(`unexpected stage ${request.stage}`);
       return {
         output: output as T,

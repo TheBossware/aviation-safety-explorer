@@ -12,7 +12,8 @@
     "isit:preprocess": "node --env-file=.env.local --import tsx scripts/isit-preprocess.ts",
     "isit:batch": "node --env-file=.env.local --import tsx scripts/isit-batch.ts",
     "isit:revalidate": "node --env-file=.env.local --import tsx scripts/isit-revalidate.ts",
-    "isit:costs": "node --env-file=.env.local --import tsx scripts/isit-costs.ts"
+    "isit:costs": "node --env-file=.env.local --import tsx scripts/isit-costs.ts",
+    "airlines:extract": "node --env-file=.env.local --import tsx scripts/airlines-extract.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",

@@ -103,3 +103,9 @@ export interface CategoryCount {
   category: string;
   count: number;
 }
+
+export interface AirlineExtraction {
+  airlines: string[];
+  roles: AirlineMention[];
+  extractedBy: string;
+}
