@@ -44,7 +44,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroupLabel>Overview</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navMain.map((item) => {
+              {navMain.filter((item) => !item.hidden).map((item) => {
                 const isActive =
                   item.url === "/" ? pathname === "/" : pathname.startsWith(item.url);
                 return (
